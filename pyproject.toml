@@ -1,7 +1,7 @@
 [project]
-name = "repl-nix-workspace"
+name = "tanaga-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "This is a Tanaga agent that uses the DeepSeek Reasoner model (using DeepSeek's API) to write a Tanaga based on the user's input. The tanaga is a traditional style of poetry native to the Tagalog people of the Philippines, traditionally written to express strong emotions."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.125.0",
