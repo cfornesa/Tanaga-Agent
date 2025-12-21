@@ -1,7 +1,7 @@
 import os
+import gc
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Dict
 
@@ -14,47 +14,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# GAIL Framework using Docstrings
-RULES = """
-Write a Tanaga, a Filipino style of poetry, written in the form of four lines written in an A-A-B-B format, where each letter represents a line, and seven total syllables in each line.
-
-- **Structure**: The poem must have exactly four lines.
-- **Syllables**: Each line should consist of exactly seven syllables in both English and Tagalog.
-- **Language**: Respond in either English or Tagalog, as specified by the user's request.
-"""
-
-STEPS = """
-1. **Translation**: If necessary, translate the prompt into the target language.
-2. **Analysis**: Understand the central theme or concept from the prompt.
-3. **Composition**: Write a meaningful and creative poem adhering strictly to the seven-syllables-per-line rule.
-"""
-
-OUTPUT_FORMAT = """
-Provide the poem in plain text. Ensure each line has exactly seven syllables, and the overall tone matches the theme of the prompt.
-"""
-
-SYSTEM_PROMPT = f"{RULES}\n{STEPS}\n{OUTPUT_FORMAT}"
+# 1. HEALTH CHECK (Existing, kept clean)
+@app.get("/")
+async def root():
+    return {"message": "Welcome to Tanaga Agent! Use POST /generate-tanaga to create a Tanaga poem."}
 
 class TanagaRequest(BaseModel):
     user_input: str
 
+# 2. DEFERRED SYSTEM PROMPT
+def get_tanaga_prompt():
+    # Only exists in RAM when poetry is being generated
+    RULES = """Write a Tanaga...""" # (Your full rules)
+    STEPS = """1. Translation...""" # (Your full steps)
+    OUTPUT_FORMAT = """Provide the poem...""" # (Your full output format)
+    return f"{RULES}\n{STEPS}\n{OUTPUT_FORMAT}"
+
 @app.post("/generate-tanaga")
 async def tanaga_api(req: TanagaRequest):
-    client = OpenAI(api_key=os.environ['DEEPSEEK_API_KEY'], base_url="https://api.deepseek.com")
-    
-    response = client.chat.completions.create(
-        model="deepseek-reasoner",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": req.user_input}
-        ]
-    )
-    
-    return {"reply": response.choices[0].message.content}
+    # 3. DEFERRED IMPORT
+    from openai import OpenAI
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to Tanaga Agent! Use POST /generate-tanaga to create a Tanaga poem."}
+    client = OpenAI(
+        api_key=os.environ['DEEPSEEK_API_KEY'], 
+        base_url="https://api.deepseek.com"
+    )
+
+    system_prompt = get_tanaga_prompt()
+
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-reasoner",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": req.user_input}
+            ]
+        )
+
+        reply = response.choices[0].message.content
+
+        # 4. CLEANUP
+        gc.collect()
+
+        return {"reply": reply}
+    except Exception as e:
+        gc.collect()
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
