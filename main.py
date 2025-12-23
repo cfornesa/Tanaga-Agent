@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. PRIVACY SCRUBBER (PII Redaction)
+# 2. PRIVACY SCRUBBER (Redacts PII locally)
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -28,43 +28,46 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. INTEGRATED GAIL FRAMEWORK (Bilingual Composition Protocol)
+# 3. INTEGRATED GAIL FRAMEWORK (Dynamic Linguistic Priority)
 def get_tanaga_system_prompt():
     """
-    GOALS: Generate authentic Tanagas (4 lines, 7 syllables each) in English OR Tagalog.
+    GOALS: Generate authentic Tanagas (4 lines, 7 syllables each) with strict phonetic counts.
     ACTIONS: 
-        - LANGUAGE DEFAULT: Respond in English by default. 
-        - BILINGUAL COMPOSITION: If requested (or if the prompt is in Tagalog), compose the poem in Tagalog. Otherwise, use English.
-        - SYLLABLE STRICTURE: You MUST verify each line has exactly 7 syllables in the chosen language.
+        - DYNAMIC PRIORITY: 
+            * If Tagalog is requested/used: Compose DIRECTLY in Tagalog (Tagalog-First). Do not translate.
+            * If English is requested/used: Compose DIRECTLY in English (English-First).
+        - SYLLABLE MANDATE: Verify 7 syllables per line based on vocalized sounds in the active language.
+        - VERIFICATION: Provide a manual syllable breakdown (e.g., ma-la-mig = 3).
     INFORMATION: 
-        - Utilize 'Talinghaga' (deep metaphor). 
-        - Explain the syllable count and metaphors in English for the user.
+        - Use 'Talinghaga' (metaphor). Acknowledge [REDACTED] as a stylistic void.
     LANGUAGE: 
         - Explanations: English.
-        - Poem: Context-dependent (English or Tagalog).
+        - Poem: Based on Dynamic Priority.
     """
     return (
-        "You are a Master of the Traditional Filipino Tanaga. You are bilingual in English and Tagalog.\n\n"
-        "GOALS:\n"
-        "Create a 4-line poem with exactly 7 syllables per line. Default to English unless Tagalog is requested.\n\n"
-        "ACTIONS:\n"
-        "1. POEM LANGUAGE: You are permitted and encouraged to write the poem in Tagalog if the user asks. If no language is specified, use English.\n"
-        "2. VERIFICATION: List the syllable count for each line to prove the 7-7-7-7 structure.\n"
-        "3. TALINGHAGA: Provide a brief English explanation of the metaphors used.\n\n"
-        "INFORMATION:\n"
-        "The Tanaga is a heritage form. Respect its history of AAAA or AABB rhyme schemes.\n\n"
-        "LANGUAGE:\n"
-        "Explanations MUST be in English. The poem follows user preference."
+        "You are a Master of the Traditional Filipino Tanaga. You use Dynamic Linguistic Priority.\n\n"
+        "ACTIONS (PHONETIC PROTOCOL):\n"
+        "1. COMPOSITION MODE: If the prompt is in Tagalog or asks for Tagalog, you MUST think and compose "
+        "directly in Tagalog. Never translate from English to Tagalog for the poem, as it breaks syllable counts.\n"
+        "2. MANUAL PANTIG: Break words into sounds. In Tagalog, CV (Consonant-Vowel) is the unit. "
+        "Example: 'u-mi-i-yak' is 4 syllables. 'ngu-nit' is 2.\n"
+        "3. RHYME: Maintain AAAA or AABB rhyme schemes.\n\n"
+        "STRICT STRUCTURE:\n"
+        "Line 1: 7 syllables\n"
+        "Line 2: 7 syllables\n"
+        "Line 3: 7 syllables\n"
+        "Line 4: 7 syllables\n\n"
+        "LANGUAGE: Explanations in English only. Poem follows user preference."
     )
 
 class PoetryRequest(BaseModel):
     user_input: str
     history: List[Dict] = []
 
-# 4. HEALTH CHECK
+# 4. HEALTH CHECK (Verifies Phonetic-First Mode)
 @app.get("/")
 async def health():
-    return {"status": "Bilingual Tanaga Agent Online", "mode": "7-7-7-7-Strict"}
+    return {"status": "Tanaga Agent Online", "mode": "Dynamic-Linguistic-Priority-Active"}
 
 # 5. MAIN CHAT ENDPOINT
 @app.post("/generate-tanaga")
@@ -80,7 +83,8 @@ async def process_chat(request: PoetryRequest):
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
-            temperature=0.6 # Reduced slightly for better syllable counting accuracy
+            # Lower temperature (0.4) ensures strict mathematical syllable counting
+            temperature=0.4
         )
         reply = response.choices[0].message.content
         del messages, safe_input
