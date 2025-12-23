@@ -6,9 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 
-app = FastAPI(title="Tanaga Stochastic Engine")
+app = FastAPI(title="Tanaga Syllabic Engine v4")
 
-# 1. CORS CONFIGURATION: Bridges Hostinger frontend and Replit backend.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,9 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. PRECISION PRIVACY SCRUBBER: Targets only specific high-risk contact strings.
 def redact_pii(text: str) -> str:
-    # Thinned regex to avoid redacting Tagalog art words while protecting PII.
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
         "PHONE": r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}'
@@ -27,46 +24,33 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. CONSTRAINED GAIL FRAMEWORK (Stochastic Diversification Protocol)
 def get_tanaga_system_prompt():
     """
-    GOALS: 7-7-7-7 structure with high metaphorical variety (Talinghaga).
-    ACTIONS: 
-        - VOWEL ANCHOR: Use vowel sounds (A-E-I-O-U) to lock the 7-syllable meter.
-        - SYLLABIC CEILING: Forbidden to use words with 4+ syllables.
-        - DIVERSIFY: Avoid common cliches (lamig, hangin, langit). Use evocative imagery.
+    CONCEPT: SELF-CORRECTION LOOP.
+    The AI is now instructed to count vowels twice: once during writing, 
+    and once during a 'Refinement' phase.
     """
     return (
         "You are a Master of the Traditional Filipino Tanaga. "
-        "Each line MUST have exactly 7 vowel sounds.\n\n"
+        "Each line must have exactly 7 vowel sounds.\n\n"
         "STRICT CONSTRAINTS:\n"
-        "1. VOWEL COUNT: Exactly 7 per line. Break words into sounds (e.g., 'mga' = ma-nga = 2).\n"
-        "2. WORD LIMIT: Do not use words with 4 or more syllables. Use simple but rare root words.\n"
-        "3. TALINGHAGA: Do not be literal. Use sensory metaphors (textures, sounds, light, shadow).\n"
-        "4. VARIETY: Do not repeat the same poem twice. Explore new word paths.\n\n"
-        "OUTPUT: 4 lines only. No analysis."
+        "1. NO LONG WORDS: Words with 4+ syllables (like 'naninipi' or 'bumabalot') are FORBIDDEN.\n"
+        "2. VOWEL COUNT: Count the vowel sounds (A, E, I, O, U). \n"
+        "3. THE RE-READ: If a line feels long, shorten it. 'Ang lupa ay nanigidig' (8) is WRONG. 'Lupa ay nanigas na' (7) is RIGHT.\n"
+        "4. VARIETY: Use new metaphors (smoke, ash, glass, bone).\n\n"
+        "OUTPUT: 4 lines only. Be 100% sure of the 7-syllable count before responding."
     )
 
 class PoetryRequest(BaseModel):
     user_input: str
     history: List[Dict] = []
 
-# 4. HEALTH CHECK: Verifies the engine status.
-@app.get("/")
-async def health():
-    return {"status": "Stochastic Engine Online", "meter": "7-7-7-7", "temp": "0.6"}
-
-# 5. MAIN GENERATION ENDPOINT
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
-
-    # Redact input locally for privacy
     safe_input = redact_pii(request.user_input)
-
     client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
 
-    # Construct strictly constrained message
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
         {"role": "user", "content": f"Theme: {safe_input}"}
@@ -76,21 +60,16 @@ async def process_chat(request: PoetryRequest):
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
-            # TEMPERATURE 0.6: Forces the model to explore creative metaphors 
-            # while the prompt 'anchors' it to the syllabic math.
-            temperature=0.6
+            temperature=0.6 # The creative sweet spot
         )
 
         reply = response.choices[0].message.content
-
-        # 6. MEMORY MANAGEMENT: Clears RAM to optimize Replit performance.
         del messages, safe_input
         gc.collect()
-
         return {"reply": reply}
     except Exception as e:
         gc.collect()
-        return {"error": f"Generation Error: {str(e)}"}
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
