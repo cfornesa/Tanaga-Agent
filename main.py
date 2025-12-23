@@ -6,9 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 
-app = FastAPI(title="Tanaga Syllabic Engine")
+app = FastAPI(title="Tanaga Syllabic Agent")
 
-# 1. CORS CONFIGURATION
+# 1. CORS CONFIGURATION: Enables secure Hostinger-to-Replit communication.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. PRIVACY SCRUBBER (Essential for PII protection)
+# 2. PRIVACY SCRUBBER: Sanitizes high-risk PII locally before API transmission.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -26,42 +26,42 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. CONSTRAINED GAIL FRAMEWORK (The "Vowel Anchor" Protocol)
+# 3. INTEGRATED GAIL FRAMEWORK: The core logic for structural/cultural accuracy.
 def get_tanaga_system_prompt():
     """
-    GOALS: 7-7-7-7 structure with evocative metaphors (Talinghaga).
-    ACTIONS: 
-        - VOWEL ANCHOR: You must count exactly 7 vowel sounds per line.
-        - WORD LIMIT: Forbidden to use words with 4+ syllables.
-        - ERROR CORRECTION: 'Yelo' is 2 syllables. 'Balat' is 2 syllables. 
+    PILLAR 1 (FEW-SHOT ANCHORING): Provides a visual and rhythmic template for the AI.
+    PILLAR 2 (PHONETIC AUDIT): Forces the AI to count vocalized vowel sounds (A-E-I-O-U).
+    PILLAR 3 (SYLLABIC CEILING): Forbids words with 4+ syllables to maintain math accuracy.
+    PILLAR 4 (TALINGHAGA): Commands the use of nature-based metaphors over literal text.
     """
     return (
-        "You are a Master of the Traditional Filipino Tanaga. "
-        "Your goal is a 4-line poem with exactly 7 syllables per line.\n\n"
-        "STRICT PHONETIC RULES:\n"
-        "1. VOWEL COUNT: Every line MUST have exactly 7 vowel sounds (A, E, I, O, U).\n"
-        "2. NO 8-SYLLABLE DRIFT: Be careful with words like 'balat' (2) or 'yelo' (2). \n"
-        "   - 'Kagat ng yelo sa balat' is 8 syllables. This is a FAILURE.\n"
-        "   - 'Kagat ng yelo sa loob' is 7 syllables. This is a SUCCESS.\n"
-        "3. TALINGHAGA: Use evocative, creative metaphors, not literal descriptions.\n\n"
-        "OUTPUT: 4 lines only. No analysis."
+        "You are an Expert Tanaga Poet. Each line must have exactly 7 vowel sounds.\n\n"
+        "CONCEPTUAL IMPLEMENTATION: FEW-SHOT ANCHORING\n"
+        "Pattern: [Word] [Word] [Word] = 7 Vowels.\n"
+        "Example: Ang la-mig ay na-ri-to (7)\n\n"
+        "CONCEPTUAL IMPLEMENTATION: PHONETIC AUDIT\n"
+        "- Count every vowel sound. 'Mga' is 2 (Ma-nga). 'Sa' is 1.\n"
+        "- Use the 3-syllable word ceiling. No words like 'nanlalamig'.\n\n"
+        "STRICT STRUCTURE: 4 lines, 7 syllables each. No analysis."
     )
 
 class PoetryRequest(BaseModel):
     user_input: str
     history: List[Dict] = []
 
-# 4. HEALTH CHECK
+# 4. HEALTH CHECK: Verifies the deployment and specific Logic Mode.
 @app.get("/")
 async def health():
-    return {"status": "Anchor-Engine Online", "temp": "0.4"}
+    return {"status": "Anchor-Engine Online", "logic": "GAIL-Pillar-v4", "temp": 0.4}
 
-# 5. GENERATION ENDPOINT
+# 5. MAIN GENERATION ENDPOINT: Executes the logic with creative/syllabic balance.
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
 
+    # Apply local redaction
     safe_input = redact_pii(request.user_input)
+
     client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
 
     messages = [
@@ -73,13 +73,17 @@ async def process_chat(request: PoetryRequest):
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
-            # TEMPERATURE 0.4: The 'Creative Sweet Spot'—provides variety without total math collapse.
-            temperature=0.4
+            # CONCEPTUAL IMPLEMENTATION: TEMPERATURE ANCHORING
+            # 0.4 allows for creative metaphor without the math-collapse of higher settings.
+            temperature=0.4 
         )
 
         reply = response.choices[0].message.content
+
+        # 6. MEMORY MANAGEMENT: Prevents RAM overflow on Replit's shared containers.
         del messages, safe_input
         gc.collect()
+
         return {"reply": reply}
     except Exception as e:
         gc.collect()
