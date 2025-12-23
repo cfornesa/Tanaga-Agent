@@ -6,9 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 
-app = FastAPI(title="Tanaga Auditor Agent")
+app = FastAPI(title="Tanaga Syllabic Engine")
 
-# 1. CORS CONFIGURATION: Bridges Hostinger frontend and Replit backend.
+# 1. CORS CONFIGURATION: Enables Hostinger-to-Replit secure requests.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. PRECISION PRIVACY SCRUBBER: Targets only specific contact strings.
+# 2. PRIVACY SCRUBBER: Targets specific high-risk PII patterns.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -26,25 +26,24 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. CONSTRAINED GAIL FRAMEWORK (Short-Word Lockdown)
+# 3. CONSTRAINED GAIL FRAMEWORK (Last Mile Precision)
 def get_tanaga_system_prompt():
     """
-    GOALS: Stop count hallucinations by limiting word length.
+    GOALS: Achieve structural perfection (7-7-7-7) via vocabulary restriction.
     ACTIONS: 
-        - STRICT METER: Every line must have exactly 7 vowel sounds (A-E-I-O-U).
-        - FORBIDDEN: Do not use words with 3+ syllables (e.g., 'dumating', 'tahimik').
-        - VOCAL TRUTH: 'Mga' counts as 2 vowels (Ma-nga).
+        - 3-SYLLABLE CEILING: FORBIDDEN to use any word with 4+ syllables.
+        - ROOT WORD STRATEGY: Use simple root words instead of long conjugated verbs.
+        - VOWEL COUNTING: Every vowel sound (A, E, I, O, U) is 1 unit. 
     """
     return (
         "You are a strict Syllabic Engine for the Filipino Tanaga. "
-        "Your only goal is a 4-line poem where each line has exactly 7 vowel sounds.\n\n"
+        "Each line MUST have exactly 7 vowel sounds.\n\n"
         "STRICT CONSTRAINTS:\n"
-        "1. NO LONG WORDS: You are forbidden from using 3-syllable or 4-syllable words. Use only 1-2 syllable words.\n"
-        "2. VOWEL COUNTING: Count the vocalized sounds (A, E, I, O, U). \n"
-        "   - 'Sa la-ngit' = 3 vowel sounds.\n"
-        "   - 'Ma-nga' = 2 vowel sounds.\n"
-        "3. FORMAT: Output only the 4 lines. No explanations or audits.\n\n"
-        "TONE: Deterministic and precise."
+        "1. WORD LIMIT: Do not use words with 4 or more syllables. (e.g., 'nananahimik' is FORBIDDEN).\n"
+        "2. VOWEL RULE: Count vowels. 'Umiihip' is 4 vowels. 'Umihip' is 3.\n"
+        "3. LAST MILE FIX: If a line is too long, replace long verbs with short adjectives.\n"
+        "4. FORMAT: Output only the 4-line poem. No other text.\n\n"
+        "TONE: Deterministic."
     )
 
 class PoetryRequest(BaseModel):
@@ -54,9 +53,9 @@ class PoetryRequest(BaseModel):
 # 4. HEALTH CHECK
 @app.get("/")
 async def health():
-    return {"status": "Syllabic Engine Online", "constraints": "Locked"}
+    return {"status": "Last-Mile Engine Active", "rules": "3-Syllable-Ceiling"}
 
-# 5. MAIN GENERATION ENDPOINT
+# 5. GENERATION ENDPOINT
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
@@ -66,7 +65,7 @@ async def process_chat(request: PoetryRequest):
 
     client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
 
-    # Construct message
+    # Construct strictly constrained message
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
         {"role": "user", "content": f"Theme: {safe_input}"}
@@ -76,7 +75,7 @@ async def process_chat(request: PoetryRequest):
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
-            # TEMPERATURE 0.0: Removes all creative variance to enforce strict syllable math.
+            # DETERMINISTIC SETTING: Stops creative wandering.
             temperature=0.0
         )
 
@@ -89,7 +88,7 @@ async def process_chat(request: PoetryRequest):
         return {"reply": reply}
     except Exception as e:
         gc.collect()
-        return {"error": f"Logic error: {str(e)}"}
+        return {"error": f"Process Error: {str(e)}"}
 
 if __name__ == "__main__":
     import uvicorn
