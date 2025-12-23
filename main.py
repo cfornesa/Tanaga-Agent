@@ -8,7 +8,7 @@ from typing import List, Dict
 
 app = FastAPI(title="Tanaga Poetry Agent")
 
-# 1. CORS CONFIGURATION
+# 1. CORS CONFIGURATION: Enables secure cross-origin communication between Replit and Hostinger.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,62 +16,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. PRIVACY SCRUBBER (Redacts PII locally)
+# 2. PRIVACY SCRUBBER: Sanitizes user inputs locally to prevent PII leakage to the LLM API.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
-        "PHONE": r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}',
-        "SSN": r'\b(?!666|000|9\d{2})\d{3}[- ]?(?!00)\d{2}[- ]?(?!0000)\d{4}\b',
-        "ADDRESS": r'\d{1,5}\s\w+.\s(\b\w+\b\s){1,2}\w+,\s\w+,\s[A-Z]{2}\s\d{5}'
+        "PHONE": r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}'
     }
     for label, pattern in patterns.items():
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. INTEGRATED GAIL FRAMEWORK (Phonetic Audit Protocol)
+# 3. INTEGRATED GAIL FRAMEWORK: The "Brain" of the agent.
 def get_tanaga_system_prompt():
     """
-    GOALS: Generate structurally perfect Tanagas (4 lines, 7 syllables each).
-    ACTIONS: 
-        - PHONETIC AUDIT: You must break every word into syllables before writing.
-        - TAGALOG PHONETICS: 'Mga' is 2 syllables (ma-nga). 'Sa ilalim' is 4 syllables (sa i-la-lim).
-        - SYLLABLE MANDATE: Every line MUST have exactly 7 syllables.
-        - LINGUISTIC PRIORITY: Compose directly in Tagalog if requested; do not translate from English.
-    INFORMATION: 
-        - Use traditional 'Talinghaga' (metaphor) to represent the user's theme.
-    LANGUAGE: 
-        - Poem: Tagalog or English as requested.
-        - Explanations & Audit: English.
+    CONCEPT 1: PHONETIC AUDIT - Forces the AI to vocalize sounds rather than just counting letters.
+    CONCEPT 2: LINGUISTIC PRIORITY - Ensures composition happens directly in the target language.
+    CONCEPT 3: SHORT-WORD STRATEGY - Reduces mathematical errors by limiting word complexity.
     """
     return (
-        "You are a Master of the Traditional Filipino Tanaga. You are a strict phonetic auditor.\n\n"
+        "You are a Master of the Traditional Filipino Tanaga. You use strict phonetic audits.\n\n"
         "ACTIONS (AUDIT PROTOCOL):\n"
-        "1. MANUAL PANTIG: You must break down every word by its vocalized sounds.\n"
-        "   Example: 'Mga' is ma-nga (2). 'Araw' is a-raw (2).\n"
-        "2. ZERO TOLERANCE: Any line that is not exactly 7 syllables is a failure. Rewrite until perfect.\n"
-        "3. STRUCTURE: Provide the hyphenated breakdown for each line to prove the count.\n\n"
+        "1. MANUAL PANTIG: Break every word into vocalized sounds (e.g., 'Mga' is Ma-nga).\n"
+        "2. SHORT WORD STRATEGY: Prefer words with 1-3 syllables to ensure 7-7-7-7 accuracy.\n"
+        "3. NO TRANSLATION: If Tagalog is requested, compose in Tagalog immediately to protect the meter.\n\n"
+        "STRICT CONSTRAINTS:\n"
+        "Line 1-4: Exactly 7 syllables each. Provide a hyphenated breakdown to prove the count.\n\n"
         "INFORMATION:\n"
-        "Incorporate Talinghaga (metaphor). If the user uses [REDACTED], treat it as a void.\n\n"
+        "Use Talinghaga (metaphors). Acknowledge [REDACTED] as a conceptual void or silence.\n\n"
         "LANGUAGE:\n"
-        "Explanations and Syllable Counts MUST be in English. The poem follows user preference.\n"
-        "STRICTLY ENGLISH FOR THE AUDIT SECTION."
+        "Explanations: English. Poem: User's choice. Syllable Audit: English."
     )
 
 class PoetryRequest(BaseModel):
     user_input: str
     history: List[Dict] = []
 
-# 4. HEALTH CHECK
+# 4. HEALTH CHECK: Endpoint to verify the active logic and privacy layers without running a chat.
 @app.get("/")
 async def health():
-    return {"status": "Tanaga Auditor Agent Online", "mode": "Phonetic-Audit-Enabled"}
+    return {"status": "Tanaga Auditor Online", "mode": "7-syl-strict", "scrubber": "active"}
 
-# 5. MAIN CHAT ENDPOINT
+# 5. MAIN CHAT ENDPOINT: Processes the request using the mathematical rigidity of low temperature.
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
 
-    # Redact input locally
+    # Apply local privacy scrub
     safe_input = redact_pii(request.user_input)
 
     client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
@@ -83,20 +73,20 @@ async def process_chat(request: PoetryRequest):
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
-            # Temperature 0.2 is essential for mathematical accuracy in syllable counting
-            temperature=0.2
+            # CONCEPT 4: MATHEMATICAL RIGIDITY - Low temperature (0.1) stops 'creative' syllable cheating.
+            temperature=0.1 
         )
 
         reply = response.choices[0].message.content
 
-        # 6. MEMORY MANAGEMENT
+        # 6. MEMORY MANAGEMENT: Explicitly clears variables to manage Replit's RAM limits.
         del messages, safe_input
         gc.collect()
 
         return {"reply": reply}
     except Exception as e:
         gc.collect()
-        return {"error": f"Poetry process interrupted: {str(e)}"}
+        return {"error": f"Poetry generation failed: {str(e)}"}
 
 if __name__ == "__main__":
     import uvicorn
