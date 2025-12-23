@@ -6,9 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 
-app = FastAPI(title="Tanaga Syllabic Agent")
+app = FastAPI(title="Tanaga Syllabic Engine")
 
-# 1. CORS CONFIGURATION: Enables the handshake between Hostinger (UI) and Replit (Logic).
+# 1. CORS CONFIGURATION
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. PRIVACY SCRUBBER: Locally sanitizes PII while preserving artistic Tagalog vocabulary.
+# 2. PRIVACY SCRUBBER (Essential for PII protection)
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -26,27 +26,24 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. INTEGRATED GAIL FRAMEWORK: The core logic pillars for structural and cultural accuracy.
+# 3. CONSTRAINED GAIL FRAMEWORK (The "Vowel Anchor" Protocol)
 def get_tanaga_system_prompt():
     """
-    GOAL: Generate 7-7-7-7 Tanagas using Few-Shot Anchoring and Syllabic Ceilings.
-    ACTION 1 (FEW-SHOT ANCHOR): Provide visual templates to prevent 12-syllable drift.
-    ACTION 2 (SYLLABIC CEILING): Forbid words with 4+ syllables to simplify the AI's math.
-    INFORMATION: Incorporate Talinghaga (metaphor) to avoid literal 'weather reporting.'
-    LANGUAGE: English for explanations; Tagalog/English for poetic output.
+    GOALS: 7-7-7-7 structure with evocative metaphors (Talinghaga).
+    ACTIONS: 
+        - VOWEL ANCHOR: You must count exactly 7 vowel sounds per line.
+        - WORD LIMIT: Forbidden to use words with 4+ syllables.
+        - ERROR CORRECTION: 'Yelo' is 2 syllables. 'Balat' is 2 syllables. 
     """
     return (
         "You are a Master of the Traditional Filipino Tanaga. "
-        "Each line must have exactly 7 vowel sounds (7 syllables).\n\n"
-        "CONCEPTUAL IMPLEMENTATION: FEW-SHOT ANCHORS\n"
-        "Follow these rhythmic templates precisely:\n"
-        "1. Ang la-mig ay du-ma-ting (7)\n"
-        "2. Sa Tex-as na lu-pa-in (7)\n"
-        "3. Ha-ngin ay u-mi-i-hip (7)\n"
-        "4. Ga-bi ay ta-hi-mi-kan (7)\n\n"
-        "CONCEPTUAL IMPLEMENTATION: 3-SYLLABLE CEILING\n"
-        "- Do not use words like 'nananahimik' or 'bumabalot' (too many syllables).\n"
-        "- Use short root words to ensure the 7-syllable count is perfect.\n\n"
+        "Your goal is a 4-line poem with exactly 7 syllables per line.\n\n"
+        "STRICT PHONETIC RULES:\n"
+        "1. VOWEL COUNT: Every line MUST have exactly 7 vowel sounds (A, E, I, O, U).\n"
+        "2. NO 8-SYLLABLE DRIFT: Be careful with words like 'balat' (2) or 'yelo' (2). \n"
+        "   - 'Kagat ng yelo sa balat' is 8 syllables. This is a FAILURE.\n"
+        "   - 'Kagat ng yelo sa loob' is 7 syllables. This is a SUCCESS.\n"
+        "3. TALINGHAGA: Use evocative, creative metaphors, not literal descriptions.\n\n"
         "OUTPUT: 4 lines only. No analysis."
     )
 
@@ -54,42 +51,35 @@ class PoetryRequest(BaseModel):
     user_input: str
     history: List[Dict] = []
 
-# 4. HEALTH CHECK: Verifies the deployment status of the Syllabic Engine.
+# 4. HEALTH CHECK
 @app.get("/")
 async def health():
-    return {"status": "Syllabic Engine Online", "logic": "Few-Shot-Anchored"}
+    return {"status": "Anchor-Engine Online", "temp": "0.4"}
 
-# 5. MAIN GENERATION ENDPOINT: Processes the request with balanced temperature.
+# 5. GENERATION ENDPOINT
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
 
-    # Apply local redaction before hitting the API
     safe_input = redact_pii(request.user_input)
-
     client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
 
-    # Construct strictly constrained message list
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
-        {"role": "user", "content": f"Create a 7-syllable per line Tanaga about: {safe_input}"}
+        {"role": "user", "content": f"Theme: {safe_input}"}
     ]
 
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
-            # CONCEPT: TEMPERATURE ANCHORING
-            # 0.3 provides enough 'noise' for metaphor without breaking the 7-syllable math.
-            temperature=0.3 
+            # TEMPERATURE 0.4: The 'Creative Sweet Spot'—provides variety without total math collapse.
+            temperature=0.4
         )
 
         reply = response.choices[0].message.content
-
-        # 6. MEMORY MANAGEMENT: Clears objects to prevent Replit memory leaks.
         del messages, safe_input
         gc.collect()
-
         return {"reply": reply}
     except Exception as e:
         gc.collect()
