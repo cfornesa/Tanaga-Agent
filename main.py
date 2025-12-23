@@ -6,9 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 
-app = FastAPI(title="Tanaga Poetry Agent")
+app = FastAPI(title="Tanaga Auditor Agent")
 
-# 1. CORS CONFIGURATION: Essential for Replit-to-Hostinger handshake.
+# 1. CORS CONFIGURATION: Bridges Hostinger frontend and Replit backend.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,9 +16,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. OPTIMIZED PRIVACY SCRUBBER: Thinned to prevent over-redaction of Tagalog text.
+# 2. PRECISION PRIVACY SCRUBBER: Targets only specific contact strings.
 def redact_pii(text: str) -> str:
-    # Only scrubs actual high-risk contact strings; avoids broad regex that eats art.
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
         "PHONE": r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}'
@@ -27,27 +26,25 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. INTEGRATED GAIL FRAMEWORK (Vowel-Centric Phonetic Protocol)
+# 3. CONSTRAINED GAIL FRAMEWORK (Short-Word Lockdown)
 def get_tanaga_system_prompt():
     """
-    GOALS: Generate 7-7-7-7 Tanagas by counting vowel sounds (A-E-I-O-U).
+    GOALS: Stop count hallucinations by limiting word length.
     ACTIONS: 
-        - VOWEL COUNTING: Every vocalized vowel is 1 syllable. 
-        - VOCAL TRUTH: 'Mga' is 2 (Ma-nga). 'Sa ilalim' is 4 (Sa-i-la-lim).
-        - REJECTION: If a line exceeds 7 vowel sounds, you MUST rewrite it.
+        - STRICT METER: Every line must have exactly 7 vowel sounds (A-E-I-O-U).
+        - FORBIDDEN: Do not use words with 3+ syllables (e.g., 'dumating', 'tahimik').
+        - VOCAL TRUTH: 'Mga' counts as 2 vowels (Ma-nga).
     """
     return (
-        "You are a Master of the Traditional Filipino Tanaga. You use Vowel-Sound Logic.\n\n"
-        "STRICT COMPOSITION RULES:\n"
-        "1. VOCAL COUNT: Count the vowel sounds (A, E, I, O, U) in every word.\n"
-        "2. THE MGA RULE: 'Mga' is Ma-nga (2 vowels). 'Puno't' is Pu-not (2 vowels).\n"
-        "3. NO CHEATING: Do not label a line as 7 if it has 8 or more vowel sounds.\n\n"
-        "STRUCTURE:\n"
-        "Line 1: 7 Vowel Sounds\n"
-        "Line 2: 7 Vowel Sounds\n"
-        "Line 3: 7 Vowel Sounds\n"
-        "Line 4: 7 Vowel Sounds\n\n"
-        "TONE: Poetic but mathematically precise. Provide the Poem first, then a Vowel-Breakdown."
+        "You are a strict Syllabic Engine for the Filipino Tanaga. "
+        "Your only goal is a 4-line poem where each line has exactly 7 vowel sounds.\n\n"
+        "STRICT CONSTRAINTS:\n"
+        "1. NO LONG WORDS: You are forbidden from using 3-syllable or 4-syllable words. Use only 1-2 syllable words.\n"
+        "2. VOWEL COUNTING: Count the vocalized sounds (A, E, I, O, U). \n"
+        "   - 'Sa la-ngit' = 3 vowel sounds.\n"
+        "   - 'Ma-nga' = 2 vowel sounds.\n"
+        "3. FORMAT: Output only the 4 lines. No explanations or audits.\n\n"
+        "TONE: Deterministic and precise."
     )
 
 class PoetryRequest(BaseModel):
@@ -57,36 +54,42 @@ class PoetryRequest(BaseModel):
 # 4. HEALTH CHECK
 @app.get("/")
 async def health():
-    return {"status": "Vowel-Logic Auditor Active", "privacy": "Thinned-Mode"}
+    return {"status": "Syllabic Engine Online", "constraints": "Locked"}
 
-# 5. MAIN CHAT ENDPOINT
+# 5. MAIN GENERATION ENDPOINT
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
 
-    # Redact input locally (Safe Scrub)
+    # Redact input locally
     safe_input = redact_pii(request.user_input)
 
     client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
 
-    messages = [{"role": "system", "content": get_resume_system_prompt() if "resume" in safe_input.lower() else get_tanaga_system_prompt()}]
-    messages.append({"role": "user", "content": safe_input})
+    # Construct message
+    messages = [
+        {"role": "system", "content": get_tanaga_system_prompt()},
+        {"role": "user", "content": f"Theme: {safe_input}"}
+    ]
 
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
-            # Temperature 0.1 prevents the AI from choosing 'pretty' words that break the meter.
-            temperature=0.1
+            # TEMPERATURE 0.0: Removes all creative variance to enforce strict syllable math.
+            temperature=0.0
         )
 
         reply = response.choices[0].message.content
+
+        # 6. MEMORY MANAGEMENT
         del messages, safe_input
         gc.collect()
+
         return {"reply": reply}
     except Exception as e:
         gc.collect()
-        return {"error": str(e)}
+        return {"error": f"Logic error: {str(e)}"}
 
 if __name__ == "__main__":
     import uvicorn
