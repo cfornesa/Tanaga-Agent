@@ -8,7 +8,7 @@ from typing import List, Dict
 
 app = FastAPI(title="Tanaga Poetry Agent")
 
-# 1. CORS CONFIGURATION (Essential for Hostinger-Replit Handshake)
+# 1. CORS CONFIGURATION
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. PRIVACY SCRUBBER (Redacts PII locally)
+# 2. PRIVACY SCRUBBER (PII Redaction)
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -28,32 +28,33 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. INTEGRATED GAIL FRAMEWORK (Syllabic & Rhyme Strictness)
+# 3. INTEGRATED GAIL FRAMEWORK (Bilingual Composition Protocol)
 def get_tanaga_system_prompt():
     """
-    GOALS: Generate authentic Filipino Tanagas (4 lines, 7 syllables each).
+    GOALS: Generate authentic Tanagas (4 lines, 7 syllables each) in English OR Tagalog.
     ACTIONS: 
-        - STRUCTURAL CHECK: Verify that each line has exactly 7 syllables.
-        - RHYME CHECK: Adhere to traditional AAAA, AABB, or ABAB schemes.
-        - PIVOT: If user asks non-poetry questions, state 'I focus solely on the Tanaga form'.
+        - LANGUAGE DEFAULT: Respond in English by default. 
+        - BILINGUAL COMPOSITION: If requested (or if the prompt is in Tagalog), compose the poem in Tagalog. Otherwise, use English.
+        - SYLLABLE STRICTURE: You MUST verify each line has exactly 7 syllables in the chosen language.
     INFORMATION: 
-        - Incorporate traditional 'Talinghaga' (metaphor) based on user themes.
+        - Utilize 'Talinghaga' (deep metaphor). 
+        - Explain the syllable count and metaphors in English for the user.
     LANGUAGE: 
-        - STRICTURE: RESPOND IN ENGLISH ONLY for explanations. Tagalog is used for the poem.
-        - TONE: Poetic, rhythmic, and culturally respectful.
+        - Explanations: English.
+        - Poem: Context-dependent (English or Tagalog).
     """
     return (
-        "You are a Master of the Traditional Filipino Tanaga. YOU MUST RESPOND IN ENGLISH ONLY.\n\n"
+        "You are a Master of the Traditional Filipino Tanaga. You are bilingual in English and Tagalog.\n\n"
         "GOALS:\n"
-        "Compose a poem with 4 lines and exactly 7 syllables per line.\n\n"
-        "ACTIONS (STRUCTURAL PROTOCOL):\n"
-        "1. SYLLABLE VERIFICATION: You must count the syllables of each line carefully. Each line = 7.\n"
-        "2. METAPHOR (TALINGHAGA): Use deep, nature-based or emotional metaphors.\n"
-        "3. SCOPE CONTROL: If the query is unrelated to poetry, refuse politely and pivot to a Tanaga.\n\n"
+        "Create a 4-line poem with exactly 7 syllables per line. Default to English unless Tagalog is requested.\n\n"
+        "ACTIONS:\n"
+        "1. POEM LANGUAGE: You are permitted and encouraged to write the poem in Tagalog if the user asks. If no language is specified, use English.\n"
+        "2. VERIFICATION: List the syllable count for each line to prove the 7-7-7-7 structure.\n"
+        "3. TALINGHAGA: Provide a brief English explanation of the metaphors used.\n\n"
         "INFORMATION:\n"
-        "The Tanaga is a high-art form of Tagalog poetry. Respect its rigid structure.\n\n"
+        "The Tanaga is a heritage form. Respect its history of AAAA or AABB rhyme schemes.\n\n"
         "LANGUAGE:\n"
-        "Maintain a rhythmic, academic, and respectful tone. STRICTLY ENGLISH FOR EXPLANATIONS."
+        "Explanations MUST be in English. The poem follows user preference."
     )
 
 class PoetryRequest(BaseModel):
@@ -63,16 +64,13 @@ class PoetryRequest(BaseModel):
 # 4. HEALTH CHECK
 @app.get("/")
 async def health():
-    return {"status": "Tanaga Agent Online", "mode": "Structural-Strictness-Active"}
+    return {"status": "Bilingual Tanaga Agent Online", "mode": "7-7-7-7-Strict"}
 
 # 5. MAIN CHAT ENDPOINT
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
-
-    # Redact input locally
     safe_input = redact_pii(request.user_input)
-
     client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
 
     messages = [{"role": "system", "content": get_tanaga_system_prompt()}] + request.history
@@ -82,15 +80,11 @@ async def process_chat(request: PoetryRequest):
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
-            temperature=0.8 # Higher for creative poetic output
+            temperature=0.6 # Reduced slightly for better syllable counting accuracy
         )
-
         reply = response.choices[0].message.content
-
-        # 6. MEMORY MANAGEMENT
         del messages, safe_input
         gc.collect()
-
         return {"reply": reply}
     except Exception as e:
         gc.collect()
