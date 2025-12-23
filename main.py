@@ -8,7 +8,7 @@ from typing import List, Dict
 
 app = FastAPI(title="Tanaga Poetry Agent")
 
-# 1. CORS CONFIGURATION (Essential for frontend connectivity)
+# 1. CORS CONFIGURATION (Essential for Hostinger-Replit Handshake)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. PRIVACY SCRUBBER (Redacts PII, SSNs, and Physical Addresses)
+# 2. PRIVACY SCRUBBER (Redacts PII locally)
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -28,85 +28,73 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. INTEGRATED GAIL FRAMEWORK (With Structural & Cultural Safeguards)
+# 3. INTEGRATED GAIL FRAMEWORK (Syllabic & Rhyme Strictness)
 def get_tanaga_system_prompt():
     """
-    GOALS: Generate authentic, high-quality Tanaga poetry based on user themes.
+    GOALS: Generate authentic Filipino Tanagas (4 lines, 7 syllables each).
     ACTIONS: 
-        - Adhere strictly to the 4-line, 7-syllables-per-line structure.
-        - Implement the traditional AAAA (monorhyme) scheme.
-    SAFEGUARDS: 
-        - Structural Veracity: Verify syllable counts mentally before outputting.
-        - Cultural Integrity: Respect the Filipino roots of the form; avoid 
-          modern Western 'free verse' styles that break the Tanaga tradition.
+        - STRUCTURAL CHECK: Verify that each line has exactly 7 syllables.
+        - RHYME CHECK: Adhere to traditional AAAA, AABB, or ABAB schemes.
+        - PIVOT: If user asks non-poetry questions, state 'I focus solely on the Tanaga form'.
     INFORMATION: 
-        - Utilize vivid, metaphorical imagery (talinghaga).
-        - Respect any [REDACTED] placeholders in the theme.
-    LANGUAGE: Poetic, evocative, and rhythmic.
+        - Incorporate traditional 'Talinghaga' (metaphor) based on user themes.
+    LANGUAGE: 
+        - STRICTURE: RESPOND IN ENGLISH ONLY for explanations. Tagalog is used for the poem.
+        - TONE: Poetic, rhythmic, and culturally respectful.
     """
     return (
-        "You are a Master Poet specializing in the traditional Filipino Tanaga.\n\n"
+        "You are a Master of the Traditional Filipino Tanaga. YOU MUST RESPOND IN ENGLISH ONLY.\n\n"
         "GOALS:\n"
-        "Produce a poem consisting of exactly four lines, with seven syllables each, "
-        "following an AAAA rhyme scheme.\n\n"
-        "ACTIONS (STRUCTURAL SAFEGUARD):\n"
-        "1. Count syllables carefully. Each line must be exactly 7 syllables.\n"
-        "2. Ensure the end-rhymes for all four lines are consistent (AAAA).\n"
-        "3. Use 'Talinghaga' (metaphor) to give the poem depth, as is traditional.\n\n"
-        "INFORMATION & LANGUAGE:\n"
-        "Focus on the theme provided. If the user provides [REDACTED] content, "
-        "ignore it and use the surrounding context to build the poem's atmosphere. "
-        "Keep the language elegant and respectful of the form's history."
+        "Compose a poem with 4 lines and exactly 7 syllables per line.\n\n"
+        "ACTIONS (STRUCTURAL PROTOCOL):\n"
+        "1. SYLLABLE VERIFICATION: You must count the syllables of each line carefully. Each line = 7.\n"
+        "2. METAPHOR (TALINGHAGA): Use deep, nature-based or emotional metaphors.\n"
+        "3. SCOPE CONTROL: If the query is unrelated to poetry, refuse politely and pivot to a Tanaga.\n\n"
+        "INFORMATION:\n"
+        "The Tanaga is a high-art form of Tagalog poetry. Respect its rigid structure.\n\n"
+        "LANGUAGE:\n"
+        "Maintain a rhythmic, academic, and respectful tone. STRICTLY ENGLISH FOR EXPLANATIONS."
     )
 
 class PoetryRequest(BaseModel):
-    theme: str
+    user_input: str
     history: List[Dict] = []
 
-# 4. HEALTH CHECK (Verifies server and privacy layers)
+# 4. HEALTH CHECK
 @app.get("/")
 async def health():
-    return {
-        "status": "Tanaga Agent Online", 
-        "structure": "7-7-7-7 AAAA",
-        "privacy": "Active"
-    }
+    return {"status": "Tanaga Agent Online", "mode": "Structural-Strictness-Active"}
 
-# 5. MAIN GENERATION ENDPOINT
-@app.post("/generate")
-async def generate_poetry(request: PoetryRequest):
-    # DEFERRED IMPORT: Keeps memory usage low
+# 5. MAIN CHAT ENDPOINT
+@app.post("/generate-tanaga")
+async def process_chat(request: PoetryRequest):
     from openai import OpenAI
 
     # Redact input locally
-    safe_theme = redact_pii(request.theme)
+    safe_input = redact_pii(request.user_input)
 
-    api_key = os.environ.get('DEEPSEEK_API_KEY')
-    if not api_key:
-        return {"error": "DeepSeek API Key missing."}
+    client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
 
-    client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
-
-    # Construct prompt for DeepSeek-V3
     messages = [{"role": "system", "content": get_tanaga_system_prompt()}] + request.history
-    messages.append({"role": "user", "content": f"Theme: {safe_theme}"})
+    messages.append({"role": "user", "content": safe_input})
 
     try:
         response = client.chat.completions.create(
-            model="deepseek-chat", # V3 is excellent for rhythmic/constrained text
-            messages=messages
+            model="deepseek-chat",
+            messages=messages,
+            temperature=0.8 # Higher for creative poetic output
         )
 
-        poem = response.choices[0].message.content
+        reply = response.choices[0].message.content
 
         # 6. MEMORY MANAGEMENT
-        del messages, safe_theme
+        del messages, safe_input
         gc.collect()
 
-        return {"tanaga": poem}
+        return {"reply": reply}
     except Exception as e:
         gc.collect()
-        return {"error": f"Poetic engine failed: {str(e)}"}
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
