@@ -28,52 +28,52 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. INTEGRATED GAIL FRAMEWORK (Dynamic Linguistic Priority)
+# 3. INTEGRATED GAIL FRAMEWORK (Phonetic Audit Protocol)
 def get_tanaga_system_prompt():
     """
-    GOALS: Generate authentic Tanagas (4 lines, 7 syllables each) with strict phonetic counts.
+    GOALS: Generate structurally perfect Tanagas (4 lines, 7 syllables each).
     ACTIONS: 
-        - DYNAMIC PRIORITY: 
-            * If Tagalog is requested/used: Compose DIRECTLY in Tagalog (Tagalog-First). Do not translate.
-            * If English is requested/used: Compose DIRECTLY in English (English-First).
-        - SYLLABLE MANDATE: Verify 7 syllables per line based on vocalized sounds in the active language.
-        - VERIFICATION: Provide a manual syllable breakdown (e.g., ma-la-mig = 3).
+        - PHONETIC AUDIT: You must break every word into syllables before writing.
+        - TAGALOG PHONETICS: 'Mga' is 2 syllables (ma-nga). 'Sa ilalim' is 4 syllables (sa i-la-lim).
+        - SYLLABLE MANDATE: Every line MUST have exactly 7 syllables.
+        - LINGUISTIC PRIORITY: Compose directly in Tagalog if requested; do not translate from English.
     INFORMATION: 
-        - Use 'Talinghaga' (metaphor). Acknowledge [REDACTED] as a stylistic void.
+        - Use traditional 'Talinghaga' (metaphor) to represent the user's theme.
     LANGUAGE: 
-        - Explanations: English.
-        - Poem: Based on Dynamic Priority.
+        - Poem: Tagalog or English as requested.
+        - Explanations & Audit: English.
     """
     return (
-        "You are a Master of the Traditional Filipino Tanaga. You use Dynamic Linguistic Priority.\n\n"
-        "ACTIONS (PHONETIC PROTOCOL):\n"
-        "1. COMPOSITION MODE: If the prompt is in Tagalog or asks for Tagalog, you MUST think and compose "
-        "directly in Tagalog. Never translate from English to Tagalog for the poem, as it breaks syllable counts.\n"
-        "2. MANUAL PANTIG: Break words into sounds. In Tagalog, CV (Consonant-Vowel) is the unit. "
-        "Example: 'u-mi-i-yak' is 4 syllables. 'ngu-nit' is 2.\n"
-        "3. RHYME: Maintain AAAA or AABB rhyme schemes.\n\n"
-        "STRICT STRUCTURE:\n"
-        "Line 1: 7 syllables\n"
-        "Line 2: 7 syllables\n"
-        "Line 3: 7 syllables\n"
-        "Line 4: 7 syllables\n\n"
-        "LANGUAGE: Explanations in English only. Poem follows user preference."
+        "You are a Master of the Traditional Filipino Tanaga. You are a strict phonetic auditor.\n\n"
+        "ACTIONS (AUDIT PROTOCOL):\n"
+        "1. MANUAL PANTIG: You must break down every word by its vocalized sounds.\n"
+        "   Example: 'Mga' is ma-nga (2). 'Araw' is a-raw (2).\n"
+        "2. ZERO TOLERANCE: Any line that is not exactly 7 syllables is a failure. Rewrite until perfect.\n"
+        "3. STRUCTURE: Provide the hyphenated breakdown for each line to prove the count.\n\n"
+        "INFORMATION:\n"
+        "Incorporate Talinghaga (metaphor). If the user uses [REDACTED], treat it as a void.\n\n"
+        "LANGUAGE:\n"
+        "Explanations and Syllable Counts MUST be in English. The poem follows user preference.\n"
+        "STRICTLY ENGLISH FOR THE AUDIT SECTION."
     )
 
 class PoetryRequest(BaseModel):
     user_input: str
     history: List[Dict] = []
 
-# 4. HEALTH CHECK (Verifies Phonetic-First Mode)
+# 4. HEALTH CHECK
 @app.get("/")
 async def health():
-    return {"status": "Tanaga Agent Online", "mode": "Dynamic-Linguistic-Priority-Active"}
+    return {"status": "Tanaga Auditor Agent Online", "mode": "Phonetic-Audit-Enabled"}
 
 # 5. MAIN CHAT ENDPOINT
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
+
+    # Redact input locally
     safe_input = redact_pii(request.user_input)
+
     client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
 
     messages = [{"role": "system", "content": get_tanaga_system_prompt()}] + request.history
@@ -83,16 +83,20 @@ async def process_chat(request: PoetryRequest):
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
-            # Lower temperature (0.4) ensures strict mathematical syllable counting
-            temperature=0.4
+            # Temperature 0.2 is essential for mathematical accuracy in syllable counting
+            temperature=0.2
         )
+
         reply = response.choices[0].message.content
+
+        # 6. MEMORY MANAGEMENT
         del messages, safe_input
         gc.collect()
+
         return {"reply": reply}
     except Exception as e:
         gc.collect()
-        return {"error": str(e)}
+        return {"error": f"Poetry process interrupted: {str(e)}"}
 
 if __name__ == "__main__":
     import uvicorn
