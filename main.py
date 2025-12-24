@@ -1,9 +1,9 @@
 """
 ================================================================================
 SYSTEM ARCHITECT: Chris Fornesa
-PROJECT: Tanaga & Poetry Agent (Mistral Edition)
-MISSION: Preserving Philippine poetic forms through structural and phonetic rigor.
-GOVERNANCE: Local PII Redaction, Ethical Model Routing (Ministral 14B), Syllabic Anchoring.
+PROJECT: Tanaga & Poetry Agent (Veracity Edition)
+MISSION: Preserving Philippine poetic forms through rigid syllabic auditing.
+GOVERNANCE: Local PII Redaction, Ethical Model Routing, Syllabic Stress-Testing.
 ================================================================================
 """
 
@@ -20,7 +20,8 @@ from typing import List, Dict
 app = FastAPI(title="Tanaga & Poetry Agent - Mistral Edition")
 
 # 1. CORS PROTOCOL (The Digital Handshake)
-# Enables secure communication between the Hostinger frontend and Replit backend.
+# CONCEPTUAL EXPLANATION: Configures Cross-Origin Resource Sharing to allow 
+# secure data exchange between the Hostinger frontend and the Replit API.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,22 +40,23 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. POETIC PROTOCOL: THE GAIL FRAMEWORK
+# 3. POETIC PROTOCOL: REINFORCED GAIL FRAMEWORK
 # CONCEPTUAL EXPLANATION: Combines pre-colonial Tagalog metrics with English adaptations.
-# Focuses on 'Talinghaga' (evocative metaphor) and rigid syllabic counting.
+# ARCHITECTURAL NOTE: Transitioned to "Stress-Test" logic to mitigate LLM token-counting errors.
 def get_tanaga_system_prompt():
     return (
         "You are an Expert Poet specialized in the pre-colonial Philippine Tanaga.\n\n"
-        "GOALS: Create structurally perfect 4-line poems with evocative metaphors.\n\n"
-        "STRICT FORMATTING RULE:\n"
-        "DO NOT USE MARKDOWN. No asterisks (*) or bolding. Output 4 lines only.\n\n"
-        "CONCEPTUAL IMPLEMENTATION: SYLLABIC ANCHORING\n"
-        "- For Tagalog: 4 lines, exactly 7 syllables per line.\n"
-        "- For English: 4 lines, exactly 8 syllables per line.\n\n"
-        "CONCEPTUAL IMPLEMENTATION: PHONETIC AUDIT\n"
-        "- Count vocalized vowel sounds carefully (A-E-I-O-U).\n"
-        "- 'Mga' counts as 2 syllables. 'Gabi'y' counts as 2.\n\n"
-        "LANGUAGE: Expressive and evocative. Respond only in the language requested."
+        "STRICT ARCHITECTURAL CONSTRAINTS:\n"
+        "1. TAGALOG METER: Exactly 7 syllables per line. (A-A-A-A or A-B-A-B).\n"
+        "2. ENGLISH METER: Exactly 8 syllables per line. (A-A-A-A or A-B-A-B).\n"
+        "3. STRUCTURE: Exactly 4 lines total.\n"
+        "4. NO MARKDOWN: Plain text only. No asterisks (*). No bolding.\n\n"
+        "SYLLABLE AUDIT METHOD (INTERNAL STRESS-TEST):\n"
+        "- Break every word into its vocalized vowel sounds (A-E-I-O-U) before outputting.\n"
+        "- Tagalog Example (7): Ang pa-lay ay la-mi-gas.\n"
+        "- English Example (8): The sun is hot up-on the sand.\n"
+        "- Avoid 'mga' or complex diphthongs that confuse tokenization.\n\n"
+        "TONE: High-density metaphor (Talinghaga). Professional and structurally rigid."
     )
 
 class PoetryRequest(BaseModel):
@@ -67,7 +69,7 @@ async def health_check():
     return {
         "status": "online", 
         "agent": "Tanaga Poet",
-        "meter": "Hybrid-7/8",
+        "meter": "Fixed-7/8-Audit",
         "model": "ministral-14b-2512"
     }
 
@@ -85,9 +87,10 @@ async def process_chat(request: PoetryRequest):
     # CHOICE: Mistral AI prioritized for its low-carbon footprint and reasoning power.
     client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
+    # ARCHITECTURAL NOTE: Prompting the model to specifically perform a count in its response phase.
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
-        {"role": "user", "content": safe_input}
+        {"role": "user", "content": f"Theme: {safe_input}. Construct the verse. Audit syllable counts for each line to ensure strict adherence."}
     ]
 
     try:
@@ -96,9 +99,9 @@ async def process_chat(request: PoetryRequest):
             model="ministral-14b-latest", 
             messages=messages,
             # CONCEPTUAL IMPLEMENTATION: TEMPERATURE ANCHORING
-            # 0.4 provides the 'Sweet Spot' for creative variety without losing meter.
-            temperature=0.4, 
-            max_tokens=200
+            # Lowered to 0.15 to prioritize structural veracity over creative drift.
+            temperature=0.15, 
+            max_tokens=300
         )
 
         reply_text = response.choices[0].message.content
