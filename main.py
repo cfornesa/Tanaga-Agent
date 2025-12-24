@@ -1,14 +1,26 @@
+"""
+================================================================================
+SYSTEM ARCHITECT: Chris Fornesa
+PROJECT: Tanaga & Poetry Agent (Mistral Edition)
+MISSION: Preserving Philippine poetic forms through structural and phonetic rigor.
+GOVERNANCE: Local PII Redaction, Ethical Model Routing (Ministral 14B), Syllabic Anchoring.
+================================================================================
+"""
+
 import os
 import re
 import gc
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 
-app = FastAPI(title="Tanaga & Poetry Agent")
+# INITIALIZATION: FastAPI selected for high-concurrency async performance.
+app = FastAPI(title="Tanaga & Poetry Agent - Mistral Edition")
 
-# 1. CORS CONFIGURATION: Enables secure communication between UI and Logic.
+# 1. CORS PROTOCOL (The Digital Handshake)
+# Enables secure communication between the Hostinger frontend and Replit backend.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +28,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. PRIVACY SCRUBBER: Sanitizes PII locally before API transmission.
+# 2. PRIVACY SCRUBBER (PII Sanitization Layer)
+# MISSION ALIGNMENT: Protects user privacy by redacting identifiers locally.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -26,43 +39,51 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. INTEGRATED GAIL FRAMEWORK: The core logic pillars for structural/cultural accuracy.
+# 3. POETIC PROTOCOL: THE GAIL FRAMEWORK
+# CONCEPTUAL EXPLANATION: Combines pre-colonial Tagalog metrics with English adaptations.
+# Focuses on 'Talinghaga' (evocative metaphor) and rigid syllabic counting.
 def get_tanaga_system_prompt():
-    """
-    PILLAR 1 (SYLLABIC ANCHOR): Enforce 7-7-7-7 for Tagalog and 8-8-8-8 for English.
-    PILLAR 2 (PHONETIC AUDIT): Count vocalized vowel sounds (A-E-I-O-U).
-    PILLAR 3 (CEILING): Limit word length to 3-4 syllables to prevent math errors.
-    PILLAR 4 (TALINGHAGA): Prioritize evocative metaphors over literal descriptions.
-    """
     return (
-        "You are an Expert Poet specialized in the Tanaga and Short-Form Verse.\n\n"
+        "You are an Expert Poet specialized in the pre-colonial Philippine Tanaga.\n\n"
+        "GOALS: Create structurally perfect 4-line poems with evocative metaphors.\n\n"
+        "STRICT FORMATTING RULE:\n"
+        "DO NOT USE MARKDOWN. No asterisks (*) or bolding. Output 4 lines only.\n\n"
         "CONCEPTUAL IMPLEMENTATION: SYLLABIC ANCHORING\n"
         "- For Tagalog: 4 lines, exactly 7 syllables per line.\n"
         "- For English: 4 lines, exactly 8 syllables per line.\n\n"
         "CONCEPTUAL IMPLEMENTATION: PHONETIC AUDIT\n"
-        "- Count vocalized sounds carefully. 'Mga' is 2. 'Gabi'y' is 2.\n"
-        "- Avoid long, complex words that break the meter.\n\n"
-        "TONE: Expressive, evocative, and structurally rigid. Output 4 lines only."
+        "- Count vocalized vowel sounds carefully (A-E-I-O-U).\n"
+        "- 'Mga' counts as 2 syllables. 'Gabi'y' counts as 2.\n\n"
+        "LANGUAGE: Expressive and evocative. Respond only in the language requested."
     )
 
 class PoetryRequest(BaseModel):
     user_input: str
     history: List[Dict] = []
 
-# 4. HEALTH CHECK: Verifies the 'Master State' logic.
+# 4. HEALTH CHECK (System Vitality)
 @app.get("/")
-async def health():
-    return {"status": "Master-Logic Online", "temp": 0.4, "meter": "Hybrid-7/8"}
+async def health_check():
+    return {
+        "status": "online", 
+        "agent": "Tanaga Poet",
+        "meter": "Hybrid-7/8",
+        "model": "ministral-14b-2512"
+    }
 
-# 5. MAIN GENERATION ENDPOINT: Executes the logic with the validated 0.4 temperature.
+# 5. MAIN GENERATION ENDPOINT
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
 
-    # Apply local privacy redaction
     safe_input = redact_pii(request.user_input)
+    api_key = os.environ.get('MISTRAL_API_KEY')
 
-    client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
+    if not api_key:
+        return {"reply": "Error: MISTRAL_API_KEY missing from server secrets."}
+
+    # CHOICE: Mistral AI prioritized for its low-carbon footprint and reasoning power.
+    client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
@@ -70,25 +91,28 @@ async def process_chat(request: PoetryRequest):
     ]
 
     try:
+        # Utilizing Ministral 14B for precise vowel-count auditing.
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model="ministral-14b-latest", 
             messages=messages,
             # CONCEPTUAL IMPLEMENTATION: TEMPERATURE ANCHORING
-            # 0.4 is the proven 'Sweet Spot' for variety and structural integrity.
-            temperature=0.4 
+            # 0.4 provides the 'Sweet Spot' for creative variety without losing meter.
+            temperature=0.4, 
+            max_tokens=200
         )
 
-        reply = response.choices[0].message.content
+        reply_text = response.choices[0].message.content
 
-        # 6. MEMORY MANAGEMENT: Clears objects to prevent Replit resource exhaustion.
+        # STEP 6: Memory Cleanup (Ecological Conservation)
         del messages, safe_input
         gc.collect()
 
-        return {"reply": reply}
+        return {"reply": reply_text.strip()}
+
     except Exception as e:
         gc.collect()
-        return {"error": str(e)}
+        return {"reply": f"System Error: {str(e)}"}
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, log_level="info")
