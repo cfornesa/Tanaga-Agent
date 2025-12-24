@@ -3,7 +3,7 @@
 SYSTEM ARCHITECT: Chris Fornesa
 PROJECT: Tanaga & Poetry Agent (Phonetic Rigor Edition)
 MISSION: Achieving 100% syllabic veracity via staccato-word constraints.
-GOVERNANCE: Local PII Redaction, Deterministic Inference, Dynamic Language Detection.
+GOVERNANCE: Local PII Redaction, Deterministic Inference, Language Prioritization.
 ================================================================================
 """
 
@@ -17,13 +17,10 @@ from pydantic import BaseModel
 from typing import List, Dict
 
 # INITIALIZATION: FastAPI selected for high-concurrency async performance.
-# CONCEPTUAL REASONING: Minimizing overhead ensures that the "Thinking Time" 
-# is dedicated to phonetic auditing rather than server latency.
 app = FastAPI(title="Tanaga & Poetry Agent - Veracity Edition")
 
 # 1. CORS PROTOCOL (The Digital Handshake)
-# CONCEPTUAL REASONING: This enables secure Cross-Origin communication between 
-# the Hostinger UI and the Replit logic layer, maintaining a strict API boundary.
+# Enables secure communication between the Hostinger UI and Replit backend.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,9 +29,7 @@ app.add_middleware(
 )
 
 # 2. PRIVACY SCRUBBER (PII Sanitization Layer)
-# CONCEPTUAL REASONING: Implements "Privacy-by-Design." By scrubbing identifiers 
-# locally using Regex, we ensure that user-specific data never reaches the 
-# external LLM inference clusters.
+# MISSION ALIGNMENT: Protects user privacy by redacting identifiers locally.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -45,9 +40,9 @@ def redact_pii(text: str) -> str:
     return text
 
 # 3. POETIC PROTOCOL: THE STACCATO CONSTRAINT
-# CONCEPTUAL REASONING: This framework addresses the "Phonetic Math" limitation 
-# of LLMs. By using "Staccato Instructions," we force the model to prioritize 
-# structural rigidness (Syllabic Anchoring) over creative linguistic drift.
+# CONCEPTUAL REASONING: Implements the 'Veracity Lockdown.' By forbidding 
+# words longer than 3 syllables, we align the AI's token-based logic with 
+# actual phonetic counting, preventing 'Long-Word Hallucination.'
 def get_tanaga_system_prompt():
     return (
         "You are an Expert Poet specialized in the pre-colonial Philippine Tanaga.\n\n"
@@ -89,11 +84,18 @@ async def process_chat(request: PoetryRequest):
 
     client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
-    # DYNAMIC LANGUAGE DETECTION LOGIC
-    # CONCEPTUAL REASONING: Detects if the user specified 'English' to 
-    # adjust the meter constraint dynamically between 7 and 8 syllables.
-    target_lang = "Tagalog (7 syllables per line)"
-    if "english" in safe_input.lower():
+    # DYNAMIC LANGUAGE DETECTION & DEFAULTING
+    # CONCEPTUAL REASONING: Defaults to English (8-syllable) unless Tagalog is 
+    # explicitly requested. This ensures the agent follows user intent.
+    user_query_lower = safe_input.lower()
+
+    # Check for Tagalog indicators
+    tagalog_triggers = ["tagalog", "sa tagalog", "filipino", "tag-alog"]
+    is_tagalog = any(trigger in user_query_lower for trigger in tagalog_triggers)
+
+    if is_tagalog:
+        target_lang = "Tagalog (7 syllables per line)"
+    else:
         target_lang = "English (8 syllables per line)"
 
     messages = [
@@ -105,15 +107,13 @@ async def process_chat(request: PoetryRequest):
         response = client.chat.completions.create(
             model="ministral-14b-latest", 
             messages=messages,
-            temperature=0.1, # Forced deterministic setting for structural rigidity.
+            temperature=0.1, # Deterministic setting for structural rigidity.
             max_tokens=200
         )
 
         reply_text = response.choices[0].message.content
 
         # STEP 6: RESOURCE CONSERVATION (Garbage Collection)
-        # CONCEPTUAL REASONING: Explicit memory management is used to prevent 
-        # "RAM Creep" in the Replit environment, following Green AI principles.
         del messages, safe_input
         gc.collect()
 
