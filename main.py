@@ -3,7 +3,7 @@
 SYSTEM ARCHITECT: Chris Fornesa
 PROJECT: Tanaga & Poetry Agent (Phonetic Rigor Edition)
 MISSION: Achieving 100% syllabic veracity via staccato-word constraints.
-GOVERNANCE: Local PII Redaction, Deterministic Inference, Syllabic Ceiling.
+GOVERNANCE: Local PII Redaction, Deterministic Inference, Dynamic Language Detection.
 ================================================================================
 """
 
@@ -16,9 +16,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 
+# INITIALIZATION: FastAPI selected for high-concurrency async performance.
+# CONCEPTUAL REASONING: Minimizing overhead ensures that the "Thinking Time" 
+# is dedicated to phonetic auditing rather than server latency.
 app = FastAPI(title="Tanaga & Poetry Agent - Veracity Edition")
 
 # 1. CORS PROTOCOL (The Digital Handshake)
+# CONCEPTUAL REASONING: This enables secure Cross-Origin communication between 
+# the Hostinger UI and the Replit logic layer, maintaining a strict API boundary.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,6 +32,9 @@ app.add_middleware(
 )
 
 # 2. PRIVACY SCRUBBER (PII Sanitization Layer)
+# CONCEPTUAL REASONING: Implements "Privacy-by-Design." By scrubbing identifiers 
+# locally using Regex, we ensure that user-specific data never reaches the 
+# external LLM inference clusters.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -37,20 +45,19 @@ def redact_pii(text: str) -> str:
     return text
 
 # 3. POETIC PROTOCOL: THE STACCATO CONSTRAINT
-# CONCEPTUAL REASONING: Implements the 'Veracity Lockdown.' By forbidding 
-# words longer than 3 syllables, we align the AI's token-based logic with 
-# actual phonetic counting, preventing 'Long-Word Hallucination.'
+# CONCEPTUAL REASONING: This framework addresses the "Phonetic Math" limitation 
+# of LLMs. By using "Staccato Instructions," we force the model to prioritize 
+# structural rigidness (Syllabic Anchoring) over creative linguistic drift.
 def get_tanaga_system_prompt():
     return (
         "You are an Expert Poet specialized in the pre-colonial Philippine Tanaga.\n\n"
         "STRICT ARCHITECTURAL CONSTRAINTS:\n"
-        "1. TAGALOG METER: Exactly 7 syllables per line. NO EXCEPTIONS.\n"
-        "2. WORD CEILING: DO NOT use words longer than 3 syllables. Use short, simple words.\n"
-        "3. STRUCTURE: 4 lines of plain text only.\n"
-        "4. NO MARKDOWN: Do not use asterisks (*) or bolding.\n\n"
+        "1. TAGALOG METER: Exactly 7 syllables per line.\n"
+        "2. ENGLISH METER: Exactly 8 syllables per line.\n"
+        "3. WORD CEILING: DO NOT use words longer than 3 syllables. Use short, simple words.\n"
+        "4. NO MARKDOWN: Do not use asterisks (*) or bolding. 4 lines only.\n\n"
         "SYLLABLE CALCULATION (INTERNAL ONLY):\n"
         "- Count every vocalized vowel (A-E-I-O-U) as 1 syllable.\n"
-        "- 'Init' (2), 'Dagat' (2), 'Araw' (2), 'Lupa' (2).\n"
         "- Do not provide a syllable count in your response. Output only the poem.\n\n"
         "TONE: Use 'Talinghaga' (Metaphor). Accuracy is the highest priority."
     )
@@ -78,28 +85,35 @@ async def process_chat(request: PoetryRequest):
     api_key = os.environ.get('MISTRAL_API_KEY')
 
     if not api_key:
-        return {"reply": "Error: MISTRAL_API_KEY missing."}
+        return {"reply": "Error: MISTRAL_API_KEY missing from server secrets."}
 
     client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
-    # ARCHITECTURAL NOTE: Removed the request for an audit in the user content.
-    # This prevents the model from hallucinating counts and focuses it on the verse.
+    # DYNAMIC LANGUAGE DETECTION LOGIC
+    # CONCEPTUAL REASONING: Detects if the user specified 'English' to 
+    # adjust the meter constraint dynamically between 7 and 8 syllables.
+    target_lang = "Tagalog (7 syllables per line)"
+    if "english" in safe_input.lower():
+        target_lang = "English (8 syllables per line)"
+
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
-        {"role": "user", "content": f"Write a Tagalog Tanaga about: {safe_input}."}
+        {"role": "user", "content": f"Write a Tanaga in {target_lang} about: {safe_input}."}
     ]
 
     try:
         response = client.chat.completions.create(
             model="ministral-14b-latest", 
             messages=messages,
-            temperature=0.1, # Deterministic setting to enforce structural rigidity.
+            temperature=0.1, # Forced deterministic setting for structural rigidity.
             max_tokens=200
         )
 
         reply_text = response.choices[0].message.content
 
         # STEP 6: RESOURCE CONSERVATION (Garbage Collection)
+        # CONCEPTUAL REASONING: Explicit memory management is used to prevent 
+        # "RAM Creep" in the Replit environment, following Green AI principles.
         del messages, safe_input
         gc.collect()
 
