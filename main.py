@@ -2,8 +2,8 @@
 ================================================================================
 SYSTEM ARCHITECT: Chris Fornesa
 PROJECT: Tanaga & Poetry Agent (Phonetic Rigor Edition)
-MISSION: Achieving 100% syllabic veracity through staccato-word constraints.
-GOVERNANCE: Local PII Redaction, Deterministic Inference, Syllabic Ceiling.
+MISSION: Ensuring syllabic veracity via staccato-word constraints.
+GOVERNANCE: Local PII Redaction, Low-Temperature Mathematical Logic.
 ================================================================================
 """
 
@@ -20,7 +20,8 @@ from typing import List, Dict
 app = FastAPI(title="Tanaga & Poetry Agent - Veracity Edition")
 
 # 1. CORS PROTOCOL (The Digital Handshake)
-# Enables secure communication between the Hostinger UI and Replit backend.
+# CONCEPTUAL REASONING: Enables secure Cross-Origin communication between 
+# the Hostinger UI and the Replit logic layer, maintaining a strict API boundary.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -40,21 +41,21 @@ def redact_pii(text: str) -> str:
     return text
 
 # 3. POETIC PROTOCOL: THE STACCATO CONSTRAINT
-# CONCEPTUAL REASONING: Implements the 'Veracity Lockdown.' By forbidding 
-# words longer than 3 syllables, we align the AI's token-based logic with 
-# actual phonetic counting, preventing 'Long-Word Hallucination.'
+# CONCEPTUAL REASONING: To solve the "Phonetic Math" limitation of LLMs, 
+# this prompt mandates a "Vowel-Vocalized Audit." It explicitly forbids 
+# words longer than 3 syllables (e.g., tinatawag) to prevent count errors.
 def get_tanaga_system_prompt():
     return (
-        "You are an Expert Poet specialized in the pre-colonial Philippine Tanaga.\n\n"
+        "You are an Expert Poet specialized in the Tagalog Tanaga.\n\n"
         "STRICT ARCHITECTURAL CONSTRAINTS:\n"
         "1. TAGALOG METER: Exactly 7 syllables per line. NO EXCEPTIONS.\n"
         "2. WORD CEILING: DO NOT use words longer than 3 syllables. Use short, simple words.\n"
-        "3. STRUCTURE: 4 lines of plain text only.\n"
-        "4. NO MARKDOWN: Do not use asterisks (*) or bolding.\n\n"
-        "SYLLABLE AUDIT (VOWEL ANCHORING):\n"
-        "- Count every vocalized vowel (A-E-I-O-U) as 1 syllable.\n"
-        "- Break the line: 'Ang i-nit ay ma-ba-ngis' (7).\n"
-        "- Forbidden: Long words like 'tinatahimik' (5 syllables) or 'pumupukaw' (4).\n\n"
+        "3. STRUCTURE: Exactly 4 lines of plain text only.\n"
+        "4. NO MARKDOWN: No asterisks (*) or bolding.\n\n"
+        "SYLLABLE AUDIT (PHONETIC RIGOR):\n"
+        "- Count vocalized vowel sounds (A-E-I-O-U).\n"
+        "- 'Texas' is 2 syllables. 'Init' is 2. 'Dagat' is 2.\n"
+        "- Line Example: 'Ang a-raw ay ma-i-nit' (7).\n\n"
         "TONE: Use 'Talinghaga' (Metaphor). Accuracy is the highest priority."
     )
 
@@ -68,7 +69,7 @@ async def health_check():
     return {
         "status": "online", 
         "agent": "Tanaga Poet",
-        "logic": "Staccato-Veracity-Locked",
+        "logic": "Staccato-Veracity-Enabled",
         "model": "ministral-14b-2512"
     }
 
@@ -89,20 +90,20 @@ async def process_chat(request: PoetryRequest):
     # math. We sacrifice 'flourish' to ensure the 7-7-7-7 count is accurate.
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
-        {"role": "user", "content": f"Theme: {safe_input}. Construct the verse. Audit: 1 vowel = 1 syllable."}
+        {"role": "user", "content": f"Theme: {safe_input}. Write a 7-7-7-7 Tagalog Tanaga. Count the vowels."}
     ]
 
     try:
         response = client.chat.completions.create(
             model="ministral-14b-latest", 
             messages=messages,
-            temperature=0.1, 
-            max_tokens=200
+            temperature=0.1, # Minimized creative drift to favor mathematical accuracy.
+            max_tokens=250
         )
 
         reply_text = response.choices[0].message.content
 
-        # STEP 6: RESOURCE CONSERVATION (Garbage Collection)
+        # STEP 6: Resource Conservation (Garbage Collection)
         del messages, safe_input
         gc.collect()
 
