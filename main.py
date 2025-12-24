@@ -3,7 +3,9 @@
 SYSTEM ARCHITECT: Chris Fornesa
 PROJECT: Tanaga & Poetry Agent (Phonetic Rigor Edition)
 MISSION: Achieving 100% syllabic veracity via staccato-word constraints.
-GOVERNANCE: Local PII Redaction, Deterministic Inference, Syllabic Ceiling.
+GOVERNANCE: Local PII Redaction, Deterministic Inference, Language-Routing.
+CONCEPTUAL FRAMEWORK: Bridges the gap between Transformer-based tokenization 
+and traditional Philippine prosody.
 ================================================================================
 """
 
@@ -17,12 +19,12 @@ from pydantic import BaseModel
 from typing import List, Dict
 
 # INITIALIZATION: FastAPI selected for high-concurrency async performance.
-# CONCEPTUAL REASONING: Minimizing overhead ensures that the "Thinking Time" 
-# is dedicated to phonetic auditing rather than server latency.
+# CONCEPTUAL REASONING: Minimizing server idle time aligns with the mission of 
+# Computational Sustainability while ensuring rapid linguistic processing.
 app = FastAPI(title="Tanaga & Poetry Agent - Veracity Edition")
 
 # 1. CORS PROTOCOL (The Digital Handshake)
-# CONCEPTUAL REASONING: This enables secure Cross-Origin communication between 
+# CONCEPTUAL REASONING: Enables secure Cross-Origin communication between 
 # the Hostinger UI and the Replit logic layer, maintaining a strict API boundary.
 app.add_middleware(
     CORSMiddleware,
@@ -32,9 +34,8 @@ app.add_middleware(
 )
 
 # 2. PRIVACY SCRUBBER (PII Sanitization Layer)
-# CONCEPTUAL REASONING: Implements "Privacy-by-Design." By scrubbing identifiers 
-# locally using Regex, we ensure that user-specific data never reaches the 
-# external LLM inference clusters.
+# MISSION ALIGNMENT: Protects user privacy by redacting identifiers locally.
+# Ensures that PII never enters the external inference cluster.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -52,16 +53,15 @@ def get_tanaga_system_prompt():
     return (
         "You are an Expert Poet specialized in the pre-colonial Philippine Tanaga.\n\n"
         "STRICT ARCHITECTURAL CONSTRAINTS:\n"
-        "1. TAGALOG METER: Exactly 7 syllables per line. NO EXCEPTIONS.\n"
-        "2. ENGLISH METER: Exactly 8 syllables per line. NO EXCEPTIONS.\n"
-        "3. WORD CEILING: DO NOT use words longer than 3 syllables. Use short, simple words.\n"
-        "4. STRUCTURE: Exactly 4 lines of plain text only.\n"
-        "5. NO MARKDOWN: Do not use asterisks (*) or bolding.\n\n"
+        "1. LANGUAGE: Output ONLY ONE poem. Do not translate. Do not explain.\n"
+        "2. TAGALOG METER: Exactly 7 syllables per line.\n"
+        "3. ENGLISH METER: Exactly 8 syllables per line.\n"
+        "4. WORD CEILING: DO NOT use words longer than 3 syllables. Use simple words.\n"
+        "5. STRUCTURE: Exactly 4 lines of plain text only. No more.\n"
+        "6. NO MARKDOWN: Do not use asterisks (*) or bolding.\n\n"
         "SYLLABLE CALCULATION (INTERNAL ONLY):\n"
         "- Count every vocalized vowel (A-E-I-O-U) as 1 syllable.\n"
-        "- Break the line: 'Ang i-nit ay ma-ba-ngis' (7).\n"
-        "- Forbidden: Long words like 'tinatawag' or 'pumupukaw'.\n\n"
-        "TONE: Use 'Talinghaga' (Metaphor). Accuracy is the highest priority."
+        "- Accuracy is the highest priority."
     )
 
 class PoetryRequest(BaseModel):
@@ -75,7 +75,7 @@ async def health_check():
         "status": "online", 
         "agent": "Tanaga Poet",
         "logic": "Staccato-Veracity-Locked",
-        "model": "ministral-14b-2512"
+        "model": "ministral-14b-latest"
     }
 
 # 5. MAIN GENERATION ENDPOINT
@@ -91,32 +91,29 @@ async def process_chat(request: PoetryRequest):
 
     client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
-    # DYNAMIC LANGUAGE DETECTION
-    # CONCEPTUAL REASONING: Detects user intent for Tagalog or English to 
-    # dynamically shift the prosodic meter between 7 and 8 syllables.
+    # DYNAMIC LANGUAGE ROUTER
+    # CONCEPTUAL REASONING: Explicitly forces the model to pick ONE language 
+    # to prevent "Token Exhaustion" and ensures the meter matches the linguistic intent.
     user_query_lower = safe_input.lower()
     tagalog_triggers = ["tagalog", "sa tagalog", "filipino", "tag-alog"]
     is_tagalog = any(trigger in user_query_lower for trigger in tagalog_triggers)
 
-    if is_tagalog:
-        target_lang = "Tagalog (7 syllables per line)"
-    else:
-        target_lang = "English (8 syllables per line)"
+    target_lang = "Tagalog" if is_tagalog else "English"
+    meter = "7 syllables" if is_tagalog else "8 syllables"
 
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
-        {"role": "user", "content": f"Write a Tanaga in {target_lang} about: {safe_input}."}
+        {"role": "user", "content": f"Write ONE {target_lang} Tanaga ({meter}) about: {safe_input}. Do not provide an English version."}
     ]
 
     try:
-        # Utilizing Ministral 14B for vowel-count auditing.
+        # ARCHITECTURAL NOTE: Temperature is set to 0.1 to maximize deterministic 
+        # math. We sacrifice 'flourish' to ensure the prosodic count is accurate.
         response = client.chat.completions.create(
             model="ministral-14b-latest", 
             messages=messages,
-            # CONCEPTUAL REASONING: Temperature 0.1 maximizes deterministic math. 
-            # We sacrifice 'creative flourish' for structural veracity.
             temperature=0.1, 
-            max_tokens=200
+            max_tokens=100
         )
 
         reply_text = response.choices[0].message.content
