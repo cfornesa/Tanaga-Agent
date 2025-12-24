@@ -1,7 +1,7 @@
 """
 ================================================================================
 SYSTEM ARCHITECT: Chris Fornesa
-PROJECT: Tanaga & Poetry Agent (Vowel-Anchor Edition)
+PROJECT: Tanaga & Poetry Agent (Phonetic Rigor Edition)
 MISSION: Achieving 100% syllabic veracity via staccato-word constraints.
 GOVERNANCE: Local PII Redaction, Deterministic Inference, Language-Logic Anchoring.
 ================================================================================
@@ -20,7 +20,6 @@ from typing import List, Dict
 app = FastAPI(title="Tanaga & Poetry Agent - Veracity Edition")
 
 # 1. CORS PROTOCOL (The Digital Handshake)
-# Enables secure communication between the Hostinger UI and Replit backend.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -29,7 +28,6 @@ app.add_middleware(
 )
 
 # 2. PRIVACY SCRUBBER (PII Sanitization Layer)
-# MISSION ALIGNMENT: Protects user privacy by redacting identifiers locally.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -49,11 +47,12 @@ def get_tanaga_system_prompt():
         "STRICT ARCHITECTURAL CONSTRAINTS:\n"
         "1. TAGALOG METER: Exactly 7 syllables per line.\n"
         "2. ENGLISH METER: Exactly 8 syllables per line.\n"
-        "3. WORD CEILING: DO NOT use words longer than 3 syllables. Use short, simple words.\n"
-        "4. NO MARKDOWN: Do not use asterisks (*) or bolding. 4 lines only.\n\n"
+        "3. WORD CEILING: DO NOT use words longer than 3 syllables.\n"
+        "4. STRUCTURE: Exactly 4 lines of plain text only. No more.\n"
+        "5. NO MARKDOWN: Do not use asterisks (*) or bolding.\n\n"
         "SYLLABLE CALCULATION (INTERNAL ONLY):\n"
         "- Count every vocalized vowel (A-E-I-O-U) as 1 syllable.\n"
-        "- Do not provide a syllable count in your response. Output only the poem.\n\n"
+        "- Do not provide a syllable count in your response.\n\n"
         "TONE: Use 'Talinghaga' (Metaphor). Accuracy is the highest priority."
     )
 
@@ -80,13 +79,11 @@ async def process_chat(request: PoetryRequest):
     api_key = os.environ.get('MISTRAL_API_KEY')
 
     if not api_key:
-        return {"reply": "Error: MISTRAL_API_KEY missing from server secrets."}
+        return {"reply": "Error: MISTRAL_API_KEY missing."}
 
     client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
     # DYNAMIC LANGUAGE DETECTION & ANCHORING
-    # CONCEPTUAL REASONING: Defaults to English (8-syllable) unless Tagalog is 
-    # explicitly requested. We implement an "Internal Translation" step here.
     user_query_lower = safe_input.lower()
     tagalog_triggers = ["tagalog", "sa tagalog", "filipino", "tag-alog"]
     is_tagalog = any(trigger in user_query_lower for trigger in tagalog_triggers)
@@ -96,14 +93,13 @@ async def process_chat(request: PoetryRequest):
     else:
         target_lang = "English (8 syllables per line)"
 
-    # ARCHITECTURAL NOTE: The prompt now forces the model to perform an internal 
-    # translation anchor. This utilizes the model's stronger English weights 
-    # to understand the theme before executing the phonetic constraints.
+    # ARCHITECTURAL NOTE: Forcing "Anchor Ingestion" and a strict Max Token limit 
+    # to prevent the model from generating multiple stanzas.
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
         {"role": "user", "content": (
-            f"Step 1: Translate the theme into English to anchor the concept.\n"
-            f"Step 2: Based on that anchor, write a Tanaga in {target_lang}.\n"
+            f"Step 1: Anchor the concept in English.\n"
+            f"Step 2: Write exactly ONE Tanaga verse in {target_lang}.\n"
             f"Theme: {safe_input}"
         )}
     ]
@@ -112,13 +108,13 @@ async def process_chat(request: PoetryRequest):
         response = client.chat.completions.create(
             model="ministral-14b-latest", 
             messages=messages,
-            temperature=0.1, # Deterministic setting for structural rigidity.
-            max_tokens=200
+            temperature=0.1, 
+            max_tokens=60 # ARCHITECTURAL LIMIT: Prevents multi-stanza hallucinations
         )
 
         reply_text = response.choices[0].message.content
 
-        # STEP 6: RESOURCE CONSERVATION (Garbage Collection)
+        # Resource Conservation
         del messages, safe_input
         gc.collect()
 
