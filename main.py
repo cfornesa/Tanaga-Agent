@@ -2,8 +2,8 @@
 ================================================================================
 SYSTEM ARCHITECT: Chris Fornesa
 PROJECT: Tanaga & Poetry Agent (Veracity Edition)
-MISSION: Preserving Philippine poetic forms through rigid syllabic auditing.
-GOVERNANCE: Local PII Redaction, Ethical Model Routing, Syllabic Stress-Testing.
+MISSION: Ensuring syllabic veracity in pre-colonial Philippine poetic forms.
+GOVERNANCE: Local PII Redaction, Low-Temperature Mathematical Logic.
 ================================================================================
 """
 
@@ -16,12 +16,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 
-# INITIALIZATION: FastAPI selected for high-concurrency async performance.
-app = FastAPI(title="Tanaga & Poetry Agent - Mistral Edition")
+# INITIALIZATION: FastAPI selected for its high-speed binary stream handling.
+# CONCEPTUAL REASONING: Minimizing latency is critical for maintaining the 
+# "Poetic Flow" while ensuring the server remains ecologically efficient.
+app = FastAPI(title="Tanaga & Poetry Agent - Veracity Edition")
 
 # 1. CORS PROTOCOL (The Digital Handshake)
-# CONCEPTUAL EXPLANATION: Configures Cross-Origin Resource Sharing to allow 
-# secure data exchange between the Hostinger frontend and the Replit API.
+# CONCEPTUAL REASONING: This enables secure Cross-Origin communication between 
+# the Hostinger UI and the Replit logic layer, bypassing browser-level security 
+# blocks while maintaining a strict API boundary.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,7 +33,9 @@ app.add_middleware(
 )
 
 # 2. PRIVACY SCRUBBER (PII Sanitization Layer)
-# MISSION ALIGNMENT: Protects user privacy by redacting identifiers locally.
+# CONCEPTUAL REASONING: Implements "Privacy-by-Design." By scrubbing identifiers 
+# locally using Regex, we ensure that user-specific data never reaches the 
+# external LLM inference clusters.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -40,23 +45,23 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-# 3. POETIC PROTOCOL: REINFORCED GAIL FRAMEWORK
-# CONCEPTUAL EXPLANATION: Combines pre-colonial Tagalog metrics with English adaptations.
-# ARCHITECTURAL NOTE: Transitioned to "Stress-Test" logic to mitigate LLM token-counting errors.
+# 3. POETIC PROTOCOL: VOWEL-ANCHORING FRAMEWORK
+# CONCEPTUAL REASONING: This framework addresses the "Phonetic Math" limitation 
+# of LLMs. By using "Staccato Constraints," we force the model to prioritize 
+# structural rigidness (Syllabic Anchoring) over creative linguistic drift.
 def get_tanaga_system_prompt():
     return (
-        "You are an Expert Poet specialized in the pre-colonial Philippine Tanaga.\n\n"
-        "STRICT ARCHITECTURAL CONSTRAINTS:\n"
-        "1. TAGALOG METER: Exactly 7 syllables per line. (A-A-A-A or A-B-A-B).\n"
-        "2. ENGLISH METER: Exactly 8 syllables per line. (A-A-A-A or A-B-A-B).\n"
-        "3. STRUCTURE: Exactly 4 lines total.\n"
-        "4. NO MARKDOWN: Plain text only. No asterisks (*). No bolding.\n\n"
-        "SYLLABLE AUDIT METHOD (INTERNAL STRESS-TEST):\n"
-        "- Break every word into its vocalized vowel sounds (A-E-I-O-U) before outputting.\n"
-        "- Tagalog Example (7): Ang pa-lay ay la-mi-gas.\n"
-        "- English Example (8): The sun is hot up-on the sand.\n"
-        "- Avoid 'mga' or complex diphthongs that confuse tokenization.\n\n"
-        "TONE: High-density metaphor (Talinghaga). Professional and structurally rigid."
+        "You are an Expert Poet specialized in the pre-colonial Tagalog Tanaga.\n\n"
+        "STRICT MATHEMATICAL RULES:\n"
+        "1. TAGALOG METER: Exactly 7 syllables per line. (Count: A-E-I-O-U).\n"
+        "2. ENGLISH METER: Exactly 8 syllables per line.\n"
+        "3. WORD CHOICE: Use simple, short words. Avoid words with more than 3 syllables.\n"
+        "4. NO MARKDOWN: Output 4 lines of plain text only.\n\n"
+        "SYLLABLE AUDIT (VOWEL COUNTING):\n"
+        "- Break the line: 'Ang-da-gat-ay-ma-la-wak' (7).\n"
+        "- Do not use 'Lumilipad' (4 syllables) for a 3-syllable slot.\n"
+        "- Count 'mga' as 2 syllables.\n\n"
+        "TONE: Use 'Talinghaga' (Metaphor). Accuracy is more important than flourish."
     )
 
 class PoetryRequest(BaseModel):
@@ -69,11 +74,13 @@ async def health_check():
     return {
         "status": "online", 
         "agent": "Tanaga Poet",
-        "meter": "Fixed-7/8-Audit",
+        "logic": "Vowel-Anchoring-Enabled",
         "model": "ministral-14b-2512"
     }
 
 # 5. MAIN GENERATION ENDPOINT
+# CONCEPTUAL REASONING: Orchestrates the request lifecycle. It enforces 
+# "Analytical Rigidity" by setting a low Temperature (0.1).
 @app.post("/generate-tanaga")
 async def process_chat(request: PoetryRequest):
     from openai import OpenAI
@@ -82,31 +89,30 @@ async def process_chat(request: PoetryRequest):
     api_key = os.environ.get('MISTRAL_API_KEY')
 
     if not api_key:
-        return {"reply": "Error: MISTRAL_API_KEY missing from server secrets."}
+        return {"reply": "Error: MISTRAL_API_KEY not configured."}
 
-    # CHOICE: Mistral AI prioritized for its low-carbon footprint and reasoning power.
     client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
-    # ARCHITECTURAL NOTE: Prompting the model to specifically perform a count in its response phase.
+    # ARCHITECTURAL NOTE: Forcing a "Vowel-Count Audit" in the prompt phase 
+    # provides an additional logical guardrail against hallucinated syllables.
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
-        {"role": "user", "content": f"Theme: {safe_input}. Construct the verse. Audit syllable counts for each line to ensure strict adherence."}
+        {"role": "user", "content": f"Theme: {safe_input}. Count every vowel. Ensure 7 syllables for Tagalog."}
     ]
 
     try:
-        # Utilizing Ministral 14B for precise vowel-count auditing.
         response = client.chat.completions.create(
             model="ministral-14b-latest", 
             messages=messages,
-            # CONCEPTUAL IMPLEMENTATION: TEMPERATURE ANCHORING
-            # Lowered to 0.15 to prioritize structural veracity over creative drift.
-            temperature=0.15, 
-            max_tokens=300
+            temperature=0.1, # Minimized creative drift to favor mathematical accuracy.
+            max_tokens=250
         )
 
         reply_text = response.choices[0].message.content
 
-        # STEP 6: Memory Cleanup (Ecological Conservation)
+        # STEP 6: RESOURCE CONSERVATION (Garbage Collection)
+        # CONCEPTUAL REASONING: Explicit memory management is used to prevent 
+        # "RAM Creep" in the Replit environment, following Green AI principles.
         del messages, safe_input
         gc.collect()
 
