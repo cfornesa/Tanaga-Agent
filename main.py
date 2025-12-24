@@ -2,7 +2,7 @@
 ================================================================================
 SYSTEM ARCHITECT: Chris Fornesa
 PROJECT: Tanaga & Poetry Agent (Phonetic Rigor Edition)
-MISSION: Achieving 100% syllabic veracity through staccato-word constraints.
+MISSION: Achieving 100% syllabic veracity via staccato-word constraints.
 GOVERNANCE: Local PII Redaction, Deterministic Inference, Syllabic Ceiling.
 ================================================================================
 """
@@ -16,11 +16,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 
-# INITIALIZATION: FastAPI selected for high-concurrency async performance.
 app = FastAPI(title="Tanaga & Poetry Agent - Veracity Edition")
 
 # 1. CORS PROTOCOL (The Digital Handshake)
-# Enables secure communication between the Hostinger UI and Replit backend.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -29,7 +27,6 @@ app.add_middleware(
 )
 
 # 2. PRIVACY SCRUBBER (PII Sanitization Layer)
-# MISSION ALIGNMENT: Protects user privacy by redacting identifiers locally.
 def redact_pii(text: str) -> str:
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
@@ -51,10 +48,10 @@ def get_tanaga_system_prompt():
         "2. WORD CEILING: DO NOT use words longer than 3 syllables. Use short, simple words.\n"
         "3. STRUCTURE: 4 lines of plain text only.\n"
         "4. NO MARKDOWN: Do not use asterisks (*) or bolding.\n\n"
-        "SYLLABLE AUDIT (VOWEL ANCHORING):\n"
+        "SYLLABLE CALCULATION (INTERNAL ONLY):\n"
         "- Count every vocalized vowel (A-E-I-O-U) as 1 syllable.\n"
-        "- Break the line: 'Ang i-nit ay ma-ba-ngis' (7).\n"
-        "- Forbidden: Long words like 'tinatahimik' (5 syllables) or 'pumupukaw' (4).\n\n"
+        "- 'Init' (2), 'Dagat' (2), 'Araw' (2), 'Lupa' (2).\n"
+        "- Do not provide a syllable count in your response. Output only the poem.\n\n"
         "TONE: Use 'Talinghaga' (Metaphor). Accuracy is the highest priority."
     )
 
@@ -81,22 +78,22 @@ async def process_chat(request: PoetryRequest):
     api_key = os.environ.get('MISTRAL_API_KEY')
 
     if not api_key:
-        return {"reply": "Error: MISTRAL_API_KEY missing from server secrets."}
+        return {"reply": "Error: MISTRAL_API_KEY missing."}
 
     client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
-    # ARCHITECTURAL NOTE: Temperature is set to 0.1 to maximize deterministic 
-    # math. We sacrifice 'flourish' to ensure the 7-7-7-7 count is accurate.
+    # ARCHITECTURAL NOTE: Removed the request for an audit in the user content.
+    # This prevents the model from hallucinating counts and focuses it on the verse.
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
-        {"role": "user", "content": f"Theme: {safe_input}. Construct the verse. Audit: 1 vowel = 1 syllable."}
+        {"role": "user", "content": f"Write a Tagalog Tanaga about: {safe_input}."}
     ]
 
     try:
         response = client.chat.completions.create(
             model="ministral-14b-latest", 
             messages=messages,
-            temperature=0.1, 
+            temperature=0.1, # Deterministic setting to enforce structural rigidity.
             max_tokens=200
         )
 
