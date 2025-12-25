@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Tanaga & Poetry Agent - Final Edition",
     description="Generates culturally authentic poetry with strict language adherence",
-    version="9.3"
+    version="9.4"
 )
 
 # 2. CORS PROTOCOL (The Digital Handshake)
@@ -95,29 +95,36 @@ def get_tanaga_system_prompt(language: str) -> str:
 def detect_language(user_input: str) -> str:
     """
     LANGUAGE DETECTOR (Strict Router)
-    MISSION: Determines target language with corrected logic
+    MISSION: Determines target language with corrected logic for mixed-language requests
     CONCEPTUAL IMPLEMENTATION:
-    - Checks for explicit English requests first
-    - Then checks for Tagalog requests
-    - Defaults to English as requested
-    - Handles mixed-language requests properly
+    - Explicitly checks for English patterns first, including mixed-language requests
+    - Uses comprehensive trigger lists for both languages
+    - Prioritizes English detection when both languages are present
+    - Handles your specific example pattern: "magsulat ka ng tanaga tungkol sa... sa ingles"
     """
     user_input_lower = user_input.lower()
 
-    # Check for explicit English requests first
+    # Check for explicit English requests first, including mixed-language patterns
     english_triggers = [
         "in english", "sa ingles", "english",
-        "write a tanaga about",  # English request pattern
-        "magsulat ka ng tanaga tungkol sa... sa ingles"  # Your specific example
+        "write a tanaga about",  # Pure English request
+        "magsulat ka ng tanaga tungkol sa... sa ingles",  # Your specific mixed-language pattern
+        "sa ingles",  # Key phrase for English in mixed requests
+        "in english",  # Pure English indicator
+        "english version"  # Explicit English request
     ]
-    if any(trigger in user_input_lower for trigger in english_triggers):
-        return "English"
 
-    # Then check for Tagalog
+    # Check for Tagalog requests
     tagalog_triggers = [
         "tagalog", "sa tagalog", "filipino", "tag-alog", "wika",
         "sumulat", "tanaga", "tula", "sa wikang tagalog"
     ]
+
+    # First check for explicit English patterns
+    if any(trigger in user_input_lower for trigger in english_triggers):
+        return "English"
+
+    # Then check for Tagalog patterns
     if any(trigger in user_input_lower for trigger in tagalog_triggers):
         return "Tagalog"
 
@@ -144,7 +151,7 @@ async def health_check():
     """
     return {
         "status": "online",
-        "version": "9.3",
+        "version": "9.4",
         "features": [
             "strict_language_routing",
             "cultural_authenticity",
@@ -174,19 +181,21 @@ async def generate_poetry(request: PoetryRequest):
             logger.error("MISTRAL_API_KEY not configured")
             return {"reply": "Error: API configuration missing"}
 
-        # STEP 2: Language Routing with Corrected Logic
+        # STEP 2: Language Routing with Enhanced Logic
         language = detect_language(safe_input)
 
         # STEP 3: Prepare Messages with Strict Constraints
         client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
+        # Enhanced prompt with explicit language specification
         response = client.chat.completions.create(
             model="mistral-tiny",
             messages=[
                 {"role": "system", "content": get_tanaga_system_prompt(language)},
                 {"role": "user", "content": (
                     f"Write ONE {language} poem about: {safe_input}. "
-                    "Follow all structural constraints precisely."
+                    "Follow all structural constraints precisely. "
+                    f"Language must be {language}."
                 )}
             ],
             temperature=0.1,  # Low temperature for consistency
