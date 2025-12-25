@@ -1,7 +1,7 @@
 """
 ================================================================================
 SYSTEM ARCHITECT: Christopher Fornesa
-PROJECT: Tanaga & Poetry Agent (Fully Documented Bilingual Edition)
+PROJECT: Tanaga & Poetry Agent (Final Documented Bilingual Edition)
 MISSION: Generate culturally authentic poetry with strict governance and documentation
 GOVERNANCE: Comprehensive documentation matching original conceptual framework
 ================================================================================
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Tanaga & Poetry Agent - Bilingual Edition",
     description="Generates culturally authentic poetry with English default and explicit language support",
-    version="7.1"
+    version="7.2"
 )
 
 # 1. CORS MIDDLEWARE (The Digital Handshake)
@@ -161,7 +161,7 @@ async def health_check():
     """
     return {
         "status": "online",
-        "version": "7.1",
+        "version": "7.2",
         "default_language": "English",
         "supported_languages": ["English", "Tagalog"],
         "endpoints": {
@@ -182,10 +182,10 @@ def detect_language(user_input: str, explicit_language: Optional[str] = None) ->
     with English as default per requirements.
 
     CONCEPTUAL REASONING:
-    - Respects explicit user choice when provided
+    - Respects explicit user choice when provided (Explicit Override Principle)
     - Detects language from input text when no explicit choice
-    - Defaults to English as requested (more commonly spoken)
-    - Implements "Explicit Override" principle for language selection
+    - Defaults to English as requested (Common Language Principle)
+    - Handles Tagalog-specific triggers like "sumulat" (write)
 
     Args:
         user_input (str): User's raw input text
@@ -201,7 +201,8 @@ def detect_language(user_input: str, explicit_language: Optional[str] = None) ->
     user_input_lower = user_input.lower()
 
     # Tagalog triggers - common phrases indicating Tagalog preference
-    tagalog_triggers = ["tagalog", "sa tagalog", "filipino", "tag-alog", "wika"]
+    # Includes "sumulat" (write) which is a strong indicator of Tagalog
+    tagalog_triggers = ["tagalog", "sa tagalog", "filipino", "tag-alog", "wika", "sumulat"]
     if any(trigger in user_input_lower for trigger in tagalog_triggers):
         return "Tagalog"
 
@@ -225,6 +226,7 @@ async def generate_poetry(request: PoetryRequest):
     - Respects explicit language choice while defaulting to English
     - Maintains cultural authenticity through language-specific prompts
     - Provides comprehensive error handling and logging
+    - Follows the "Deterministic Inference" principle with low temperature
 
     WORKFLOW:
       1. Input sanitization (Privacy Protection)
@@ -244,6 +246,7 @@ async def generate_poetry(request: PoetryRequest):
         from openai import OpenAI
 
         # STEP 1: INPUT SANITIZATION (Privacy Protection)
+        # CONCEPTUAL REASONING: Ensures no PII or malicious content enters the LLM
         safe_input = redact_pii(request.user_input)
         api_key = os.environ.get('MISTRAL_API_KEY')
 
@@ -252,20 +255,26 @@ async def generate_poetry(request: PoetryRequest):
             return {"reply": "Error: API configuration missing"}
 
         # STEP 2: LANGUAGE DETECTION (Bilingual Routing)
+        # CONCEPTUAL REASONING: Explicitly forces the model to pick ONE language
+        # to prevent "Token Exhaustion" and ensures meter matches linguistic intent
         language = detect_language(safe_input, request.language)
         meter = "7 syllables" if language == "Tagalog" else "8 syllables"
 
         # STEP 3: THEME DETECTION (Contextual Enhancement)
+        # CONCEPTUAL REASONING: Adds contextual focus for homesickness themes
+        # while maintaining the original constraints
         theme_prompt = ""
         safe_input_lower = safe_input.lower()
 
         if any(word in safe_input_lower for word in ["homesick", "homesickness", "longing", "miss", "pagmimiss"]):
             if language == "Tagalog":
-                theme_prompt = "Focus on 'gunita' (memory) and 'bayan' (homeland). Emphasize the emotional journey of displacement."
+                theme_prompt = "Focus on 'gunita' (memory) and 'bayan' (homeland). Use traditional Filipino imagery."
             else:
                 theme_prompt = "Emphasize longing and memory of home. Use nature imagery where appropriate."
 
         # STEP 4: POETRY GENERATION (Core Processing)
+        # CONCEPTUAL REASONING: Uses mistral-tiny for better stability while
+        # maintaining the original constraints and cultural focus
         client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
         response = client.chat.completions.create(
@@ -277,22 +286,25 @@ async def generate_poetry(request: PoetryRequest):
                     f"{theme_prompt}"
                 )}
             ],
-            temperature=0.1,  # Low temperature for consistency
+            temperature=0.1,  # Low temperature for consistency (Deterministic Inference)
             max_tokens=100
         )
 
         # STEP 5: RESPONSE VALIDATION (Quality Assurance)
+        # CONCEPTUAL REASONING: Ensures we only process valid responses
         if not hasattr(response, 'choices') or len(response.choices) == 0:
-            logger.error("Empty response from API")
-            return {"reply": "Error: Empty response from poetry engine"}
+            logger.error("Empty response from Mistral API")
+            return {"reply": "Error: Empty response from poetry engine."}
 
         try:
             reply_text = response.choices[0].message.content.strip()
         except (AttributeError, IndexError) as e:
             logger.error(f"Invalid response structure: {str(e)}")
-            return {"reply": "Error: Invalid response structure"}
+            return {"reply": "Error: Invalid response structure from poetry engine."}
 
         # STEP 6: RESOURCE CLEANUP (Memory Management)
+        # CONCEPTUAL REASONING: Explicit memory management prevents
+        # "RAM Creep" in the Replit environment, following Green AI principles
         gc.collect()
 
         # Return successful response with metadata
