@@ -1,9 +1,9 @@
 """
 ================================================================================
 SYSTEM ARCHITECT: Christopher Fornesa
-PROJECT: Tanaga & Poetry Agent (Final Documented Edition)
-MISSION: Generate culturally authentic poetry with strict language adherence
-GOVERNANCE: Local PII Redaction, Deterministic Inference, Strict Language Routing
+PROJECT: Tanaga & Poetry Agent (Final Documented Edition with Meter Enforcement)
+MISSION: Generate culturally authentic poetry with strict meter adherence
+GOVERNANCE: Local PII Redaction, Deterministic Inference, Strict Meter Enforcement
 ================================================================================
 """
 
@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 # CONCEPTUAL REASONING: FastAPI provides asynchronous processing for
 # high-concurrency poetic generation while maintaining clean API boundaries
 app = FastAPI(
-    title="Tanaga & Poetry Agent - Final Edition",
-    description="Generates culturally authentic poetry with strict language adherence",
-    version="9.4"
+    title="Tanaga & Poetry Agent - Meter Enforced Edition",
+    description="Generates poetry with strict meter adherence",
+    version="9.5"
 )
 
 # 2. CORS PROTOCOL (The Digital Handshake)
@@ -68,28 +68,37 @@ def get_tanaga_system_prompt(language: str) -> str:
     MISSION: Provides language-specific constraints for poetic generation
     CONCEPTUAL IMPLEMENTATION:
     - Enforces deterministic output structure
-    - Specifies language-specific requirements
+    - Specifies strict meter requirements with examples
     - Maintains cultural authenticity constraints
     - Uses "Staccato Instructions" to guide LLM output
     """
     if language == "Tagalog":
         return (
             "You are an Expert Poet specialized in traditional Tagalog Tanaga.\n\n"
-            "STRICT ARCHITECTURAL CONSTRAINTS:\n"
+            "STRICT METER CONSTRAINTS:\n"
             "1. OUTPUT: ONLY ONE 4-line poem in Tagalog. No translation or explanation.\n"
-            "2. STRUCTURE: Follow traditional Tagalog poetic structure.\n"
-            "3. CULTURAL IMAGERY: Use 'bayan' (homeland), 'loob' (inner self), 'gunita' (memory).\n"
-            "4. THEME FOCUS: For homesickness, emphasize emotional journey.\n"
-            "5. DETERMINISTIC GENERATION: Prioritize structural consistency."
+            "2. METER: EXACTLY 7 syllables per line. Count every vowel (A-E-I-O-U).\n"
+            "   - Example structure: 'Bayan ko'y malayo na' (7 syllables)\n"
+            "   - Example structure: 'Loob ko'y naglulumbay' (7 syllables)\n"
+            "3. STRUCTURE: 4 lines, plain text, no markdown.\n"
+            "4. CULTURAL IMAGERY: Use 'bayan' (homeland), 'loob' (inner self), 'gunita' (memory).\n"
+            "5. THEME FOCUS: For homesickness, emphasize emotional journey.\n"
+            "6. WORD CHOICE: Prefer simple, evocative words (max 3 syllables).\n"
+            "7. GRAMMAR: Use proper Tagalog grammar and sentence structure.\n"
+            "8. DETERMINISTIC GENERATION: Prioritize structural consistency over creative variation."
         )
     else:  # English
         return (
             "You are an Expert Poet specializing in structured English poetry.\n\n"
-            "STRICT ARCHITECTURAL CONSTRAINTS:\n"
+            "STRICT METER CONSTRAINTS:\n"
             "1. OUTPUT: ONLY ONE 4-line poem in English. No explanation.\n"
-            "2. STRUCTURE: Follow traditional English poetic structure.\n"
-            "3. THEME FOCUS: For homesickness, emphasize longing and memory.\n"
-            "4. DETERMINISTIC GENERATION: Prioritize structural consistency."
+            "2. METER: EXACTLY 8 syllables per line. Count every vowel sound.\n"
+            "   - Example structure: 'The moon still shines on home' (8 syllables)\n"
+            "   - Example structure: 'My heart still longs for you' (8 syllables)\n"
+            "3. STRUCTURE: 4 lines, plain text, no markdown.\n"
+            "4. THEME FOCUS: For homesickness, emphasize longing and memory.\n"
+            "5. RYTHM: Maintain consistent iambic rhythm where possible.\n"
+            "6. DETERMINISTIC GENERATION: Prioritize structural consistency over creative variation."
         )
 
 def detect_language(user_input: str) -> str:
@@ -151,9 +160,9 @@ async def health_check():
     """
     return {
         "status": "online",
-        "version": "9.4",
+        "version": "9.5",
         "features": [
-            "strict_language_routing",
+            "strict_meter_enforcement",
             "cultural_authenticity",
             "deterministic_generation"
         ]
@@ -163,11 +172,11 @@ async def health_check():
 async def generate_poetry(request: PoetryRequest):
     """
     CORE POETRY GENERATION ENDPOINT
-    MISSION: Generate culturally authentic poetry with strict language adherence
+    MISSION: Generate culturally authentic poetry with strict meter adherence
     CONCEPTUAL IMPLEMENTATION:
     1. Privacy Protection: Sanitizes input to prevent PII exposure
     2. Language Routing: Determines target language with corrected logic
-    3. Deterministic Generation: Creates poetry with strict constraints
+    3. Deterministic Generation: Creates poetry with strict meter constraints
     4. Resource Management: Ensures efficient memory usage
     """
     try:
@@ -184,18 +193,19 @@ async def generate_poetry(request: PoetryRequest):
         # STEP 2: Language Routing with Enhanced Logic
         language = detect_language(safe_input)
 
-        # STEP 3: Prepare Messages with Strict Constraints
+        # STEP 3: Prepare Messages with Strict Meter Constraints
         client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
-        # Enhanced prompt with explicit language specification
+        # Enhanced prompt with explicit meter examples and constraints
         response = client.chat.completions.create(
             model="mistral-tiny",
             messages=[
                 {"role": "system", "content": get_tanaga_system_prompt(language)},
                 {"role": "user", "content": (
                     f"Write ONE {language} poem about: {safe_input}. "
-                    "Follow all structural constraints precisely. "
-                    f"Language must be {language}."
+                    "Follow ALL meter constraints EXACTLY. "
+                    f"For {language}, use the example structures provided. "
+                    "Prioritize structural consistency over creative variation."
                 )}
             ],
             temperature=0.1,  # Low temperature for consistency
