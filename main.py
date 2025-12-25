@@ -1,10 +1,10 @@
 """
 ================================================================================
-SYSTEM ARCHITECT: Chris Fornesa
-PROJECT: Tanaga & Poetry Agent (Hybrid Edition)
-MISSION: Preserve emotional resonance while ensuring prosodic integrity.
-GOVERNANCE: Lightweight, deterministic, and optimized for Tagalog diaspora themes.
-CONCEPTUAL FRAMEWORK: Minimal intervention for maximum cultural authenticity.
+SYSTEM ARCHITECT: Christopher Fornesa
+PROJECT: Tanaga & Poetry Agent (Final Production Edition)
+MISSION: Generate culturally authentic Tagalog tanaga with optional strict meter enforcement
+GOVERNANCE: Minimal intervention, pattern-specific polishing, and full transparency
+CONCEPTUAL FRAMEWORK: AI as a cultural co-creator with human-in-the-loop refinement
 ================================================================================
 """
 
@@ -15,13 +15,17 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 # --- INITIALIZATION ---
-app = FastAPI(title="Tanaga Poet API - Hybrid Edition")
+app = FastAPI(
+    title="Tanaga Poet API",
+    description="Generates traditional Philippine tanaga poetry with optional meter polishing",
+    version="4.0"
+)
 
 # --- 1. CORS MIDDLEWARE ---
-# Allows cross-origin requests from web interfaces
+# Allows cross-origin requests from web interfaces while maintaining security
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -49,52 +53,146 @@ def redact_pii(text: str) -> str:
 # --- 3. SYSTEM PROMPT GENERATOR ---
 def get_tanaga_system_prompt() -> str:
     """
-    Generates system prompt optimized for diaspora-themed tanaga.
-    Focuses on emotional truth and natural Tagalog phrasing.
+    Generates optimized system prompt for Tagalog tanaga generation.
+    Focuses on:
+    - Emotional authenticity for diaspora themes
+    - Natural Tagalog phrasing
+    - Cultural resonance over forced meter
     """
     return (
         "You are an Expert Poet specialized in pre-colonial Philippine Tanaga.\n\n"
-        "STRICT RULES:\n"
-        "1. Output ONLY ONE 4-line poem in plain text. No translation or explanation.\n"
-        "2. TAGALOG METER: Aim for 7 syllables per line (prioritize natural flow over strict counting).\n"
-        "3. Use simple, evocative Tagalog. Avoid overused metaphors or forced rhymes.\n"
-        "4. For diaspora themes, focus on emotional truth (e.g., longing, memory, identity).\n"
-        "5. Never sacrifice meaning for meter. Natural phrasing is more important.\n"
-        "6. Common themes to incorporate when relevant:\n"
+        "GUIDELINES:\n"
+        "1. Output ONLY ONE 4-line poem in plain Tagalog. No translation or explanation.\n"
+        "2. Meter: Aim for approximately 7 syllables per line, but prioritize natural flow.\n"
+        "3. For diaspora themes, incorporate:\n"
         "   - 'bayan' (homeland)\n"
-        "   - 'loob' (inner self/heart)\n"
+        "   - 'loob' (inner self)\n"
         "   - 'gunita' (memory)\n"
         "   - 'damdamin/damdam' (feelings)\n"
-        "7. Structure: Exactly 4 lines, no markdown, no asterisks."
+        "4. Use simple, evocative language. Avoid overused metaphors.\n"
+        "5. Structure: Exactly 4 lines, no markdown, no asterisks.\n"
+        "6. When writing about identity/longing, focus on emotional truth.\n"
+        "7. Common patterns to consider:\n"
+        "   - 'Lupang walang nakita' (unseen homeland)\n"
+        "   - 'Damdamin ko'y...' (my feelings...)\n"
+        "   - 'Sa pag-ibig sa bayan' (love for homeland)\n"
+        "8. Never sacrifice meaning for meter. Natural phrasing is paramount."
     )
 
-# --- 4. MINIMAL TANGA POLISHER ---
-def polish_tanaga(poem: str) -> str:
+# --- 4. SYLLABLE COUNTER ---
+def count_syllables(line: str) -> int:
     """
-    Applies minimal polishing to fix ONLY the most common syllable issues.
-    Preserves original meaning and cultural authenticity.
-    Targets specifically the patterns seen in diaspora-themed tanaga.
+    Counts syllables in a Tagalog line using vowel counting.
+    Args:
+        line: Single line of Tagalog text
+    Returns:
+        int: Approximate syllable count
+    """
+    # Count all vowels including accented characters
+    return len(re.findall(r'[aeiouáéíóú]', line.lower()))
+
+# --- 5. ENHANCED TANGA POLISHER ---
+def polish_tanaga(poem: str) -> Tuple[str, List[Dict]]:
+    """
+    Applies targeted polishing to Tagalog tanaga for strict meter compliance.
+    Handles specific patterns found in diaspora-themed poetry:
+    - Possessive constructions
+    - Repetitive structures
+    - Common emotional phrases
+    - Long descriptive phrases
+
+    Args:
+        poem: Raw generated tanaga
+    Returns:
+        tuple: (polished_poem, list_of_changes)
     """
     lines = poem.split('\n')
-
-    # ONLY the replacements needed for your specific case
-    replacements = {
-        # Fixes: "Lupang walang nakita\ngunit damdamin ay malaya..."
-        "ngunit damdamin ay": "nguni't damdam ay",  # 9→7 syllables
-        # Fixes: "sa pag-ibig sa bayan" (if it appears)
-        "sa pag-ibig sa ": "sa pag-ibig, ",        # 8→7 syllables
-    }
+    polished_lines = []
+    changes = []
 
     for i, line in enumerate(lines):
-        for old, new in replacements.items():
-            if old in line:
-                lines[i] = line.replace(old, new)
-    return '\n'.join(lines)
+        original_line = line
+        current_line = line
 
-# --- 5. PROSODY VALIDATOR ---
+        # Rule 1: Possessive contractions
+        if "ko'y " in current_line:
+            current_line = current_line.replace("ko'y ", "'y ")
+            changes.append({
+                "line": i+1,
+                "original": original_line,
+                "change": "possessive_contraction",
+                "polished": current_line
+            })
+
+        if "mo'y " in current_line:
+            current_line = current_line.replace("mo'y ", "'y ")
+            changes.append({
+                "line": i+1,
+                "original": original_line,
+                "change": "possessive_contraction",
+                "polished": current_line
+            })
+
+        # Rule 2: Repetitive structures
+        if current_line.count("walang") > 1:
+            parts = current_line.split("walang")
+            current_line = f"walang{parts[1]}".strip()
+            changes.append({
+                "line": i+1,
+                "original": original_line,
+                "change": "repetitive_structure",
+                "polished": current_line
+            })
+
+        # Rule 3: Common phrase replacements
+        replacements = {
+            "damdamin ko'y malaya": ("damdam ko'y malaya", "emotional_phrase"),
+            "damdamin'y Pilipino": ("damdam ay Pilipino", "descriptive_phrase"),
+            "walang bayan, walang lupa": ("walang bayan, di lupa", "repetitive_structure"),
+            "sa damdamin ko'y": ("sa damdam ko'y", "possessive_contraction"),
+            "ngunit damdamin'y": ("nguni't damdam ay", "conjunction_phrase"),
+            "sa damdamin": ("sa damdam", "emotional_phrase"),
+            "ang alon": ("ang alon", "keep_as_is"),  # Already 7 syllables
+        }
+
+        for old, (new, change_type) in replacements.items():
+            if old in current_line and old != new:
+                current_line = current_line.replace(old, new)
+                changes.append({
+                    "line": i+1,
+                    "original": original_line if old in original_line else current_line,
+                    "change": change_type,
+                    "polished": current_line
+                })
+
+        # Rule 4: Final syllable check and adjustments
+        syllable_count = count_syllables(current_line)
+        if syllable_count > 8:
+            if "malaya" in current_line:
+                current_line = current_line.replace("malaya", "layà")
+                changes.append({
+                    "line": i+1,
+                    "original": original_line,
+                    "change": "poetic_contraction",
+                    "polished": current_line
+                })
+            elif "Pilipino" in current_line and "damdam" not in current_line:
+                current_line = current_line.replace("Pilipino", "Pinoy")
+                changes.append({
+                    "line": i+1,
+                    "original": original_line,
+                    "change": "colloquial_alternative",
+                    "polished": current_line
+                })
+
+        polished_lines.append(current_line)
+
+    return '\n'.join(polished_lines), changes
+
+# --- 6. PROSODY VALIDATOR ---
 def validate_tanaga(poem: str) -> Dict:
     """
-    Validates syllable count for Tagalog tanaga using vowel counting.
+    Validates syllable count for each line in a tanaga.
     Args:
         poem: Generated tanaga string
     Returns:
@@ -103,43 +201,54 @@ def validate_tanaga(poem: str) -> Dict:
     lines = poem.strip().split('\n')
     syllable_counts = []
     for line in lines:
-        count = len(re.findall(r'[aeiouáéíóú]', line.lower()))
-        syllable_counts.append(count)
-    is_valid = all(6 <= count <= 8 for count in syllable_counts)  # Lenient range
-    return {"is_valid": is_valid, "counts": syllable_counts}
+        syllable_counts.append(count_syllables(line))
+    return {
+        "is_valid": all(6 <= count <= 8 for count in syllable_counts),  # Allow ±1 syllable
+        "counts": syllable_counts,
+        "total_syllables": sum(syllable_counts)
+    }
 
-# --- 6. REQUEST MODEL ---
+# --- 7. REQUEST MODEL ---
 class PoetryRequest(BaseModel):
     user_input: str
     history: List[Dict] = []
-    strict_meter: bool = False  # Default: prioritize creativity
+    strict_meter: bool = False
+    meter_tolerance: int = 1  # Default: allow ±1 syllable
+    max_polish_pass: int = 3   # Maximum polishing attempts
 
-# --- 7. HEALTH CHECK ENDPOINT ---
+# --- 8. HEALTH CHECK ENDPOINT ---
 @app.get("/")
 async def health_check():
     """Endpoint for service status monitoring"""
     return {
         "status": "online",
-        "agent": "Tanaga Poet API v3.0",
+        "agent": "Tanaga Poet API v4.0",
         "features": [
-            "emotional_resonance (default)",
-            "strict_meter_mode (optional)",
-            "minimal_polishing",
-            "diaspora_optimized"
-        ]
+            "emotional_resonance_priority",
+            "strict_meter_option",
+            "pattern_specific_polishing",
+            "change_tracking",
+            "diaspora_theme_optimized"
+        ],
+        "example_request": {
+            "user_input": "Filipino diaspora and longing for home in Tagalog",
+            "strict_meter": True,
+            "meter_tolerance": 0
+        }
     }
 
-# --- 8. MAIN GENERATION ENDPOINT ---
+# --- 9. MAIN GENERATION ENDPOINT ---
 @app.post("/generate-tanaga")
 async def generate_tanaga(request: PoetryRequest):
     """
     Core endpoint for tanaga generation with optional polishing.
-    Workflow:
-    1. Sanitize input
-    2. Generate poem with Mistral
-    3. Validate meter
-    4. Apply polishing ONLY if strict_meter=True AND meter is invalid
-    5. Return both versions if different
+    Features:
+    - Input sanitization
+    - Tagalog-focused generation
+    - Meter validation
+    - Targeted polishing
+    - Change tracking
+    - Multiple polishing passes for stubborn cases
     """
     from openai import OpenAI
 
@@ -154,6 +263,9 @@ async def generate_tanaga(request: PoetryRequest):
     tagalog_triggers = ["tagalog", "sa tagalog", "filipino", "tag-alog", "wika"]
     is_tagalog = any(trigger in user_query_lower for trigger in tagalog_triggers)
 
+    if not is_tagalog:
+        return {"error": "Currently optimized for Tagalog input only.", "status": 400}
+
     # Prepare prompt
     messages = [
         {"role": "system", "content": get_tanaga_system_prompt()},
@@ -166,43 +278,57 @@ async def generate_tanaga(request: PoetryRequest):
         response = client.chat.completions.create(
             model="ministral-14b-latest",
             messages=messages,
-            temperature=0.1,  # Low temperature for consistency with your original outputs
+            temperature=0.1,  # Low temperature for consistency
             max_tokens=100,
             timeout=10
         )
         reply_text = response.choices[0].message.content.strip()
 
-        # Validation and conditional polishing
+        # Initial validation
         validation = validate_tanaga(reply_text)
-        polished_text = None
+        polished_text = reply_text
+        all_changes = []
 
-        if request.strict_meter and is_tagalog and not validation["is_valid"]:
-            polished_text = polish_tanaga(reply_text)
-            polished_validation = validate_tanaga(polished_text)
-        else:
-            polished_validation = None
+        # Polishing loop for strict meter
+        if request.strict_meter:
+            for pass_num in range(request.max_polish_pass):
+                polished_text, changes = polish_tanaga(polished_text)
+                if changes:
+                    all_changes.extend(changes)
+                validation = validate_tanaga(polished_text)
+
+                # Stop if valid or no more changes
+                if (validation["is_valid"] or
+                    all(count <= 7 + request.meter_tolerance for count in validation["counts"])):
+                    break
+
+        # Final validation
+        final_validation = validate_tanaga(polished_text)
 
         # Prepare response
         gc.collect()
         result = {
             "reply": reply_text,
-            "prosody_check": validation,
+            "prosody_check": validate_tanaga(reply_text),
             "disclaimer": (
                 "AI-generated tanaga (public domain). "
-                "For strict meter, use 'strict_meter:true'. "
-                "Human review recommended for traditional use."
+                "For traditional use, human review recommended. "
+                "Polishing preserves meaning while adjusting meter."
             ),
             "metadata": {
                 "language": "Tagalog",
                 "strict_mode": request.strict_meter,
+                "meter_tolerance": request.meter_tolerance,
+                "polishing_passes": min(request.max_polish_pass, pass_num + 1),
                 "tokens_used": getattr(response, 'usage', {}).get('total_tokens', None)
             }
         }
 
         # Include polished version if different
-        if polished_text and polished_text != reply_text:
+        if polished_text != reply_text:
             result["polished_reply"] = polished_text
-            result["polished_check"] = polished_validation
+            result["polished_check"] = final_validation
+            result["changes_made"] = all_changes
 
         return result
 
@@ -210,7 +336,7 @@ async def generate_tanaga(request: PoetryRequest):
         gc.collect()
         return {"error": f"Generation failed: {str(e)}", "status": 500}
 
-# --- 9. LAUNCH CONFIGURATION ---
+# --- 10. LAUNCH CONFIGURATION ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     uvicorn.run(
