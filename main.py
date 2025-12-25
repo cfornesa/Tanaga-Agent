@@ -1,9 +1,9 @@
 """
 ================================================================================
 SYSTEM ARCHITECT: Christopher Fornesa
-PROJECT: Tanaga & Poetry Agent (Final Production Edition)
-MISSION: Generate culturally authentic poetry with deterministic constraints
-GOVERNANCE: Local PII Redaction, Deterministic Inference, Language-Routing
+PROJECT: Tanaga & Poetry Agent (Final Documented Edition)
+MISSION: Generate culturally authentic poetry with strict language adherence
+GOVERNANCE: Local PII Redaction, Deterministic Inference, Strict Language Routing
 ================================================================================
 """
 
@@ -18,8 +18,8 @@ from pydantic import BaseModel
 from typing import List, Dict
 
 # Operational Transparency Configuration
-# CONCEPTUAL REASONING: Logging provides operational visibility while
-# maintaining system integrity and performance monitoring
+# CONCEPTUAL REASONING: Logging provides visibility into system operations while
+# maintaining the "Observability Principle" of modern API design
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 # CONCEPTUAL REASONING: FastAPI provides asynchronous processing for
 # high-concurrency poetic generation while maintaining clean API boundaries
 app = FastAPI(
-    title="Tanaga & Poetry Agent - Production Edition",
-    description="Generates traditional poetic forms with deterministic constraints",
-    version="9.2"
+    title="Tanaga & Poetry Agent - Final Edition",
+    description="Generates culturally authentic poetry with strict language adherence",
+    version="9.3"
 )
 
 # 2. CORS PROTOCOL (The Digital Handshake)
@@ -53,67 +53,75 @@ def redact_pii(text: str) -> str:
     - Implements "Privacy-by-Design" principle
     """
     patterns = {
+        # Email pattern matching - captures most common email formats
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
+        # Phone pattern matching - handles international and local formats
         "PHONE": r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}'
     }
     for label, pattern in patterns.items():
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-def get_tanaga_system_prompt() -> str:
+def get_tanaga_system_prompt(language: str) -> str:
     """
     POETIC PROTOCOL GENERATOR
-    MISSION: Provides strict architectural constraints for poetic generation
+    MISSION: Provides language-specific constraints for poetic generation
     CONCEPTUAL IMPLEMENTATION:
     - Enforces deterministic output structure
-    - Specifies language-specific meter requirements
+    - Specifies language-specific requirements
     - Maintains cultural authenticity constraints
     - Uses "Staccato Instructions" to guide LLM output
-    - Prioritizes structural rigidity over creative drift
     """
-    return (
-        "You are an Expert Poet specialized in traditional poetic forms.\n\n"
-        "STRICT ARCHITECTURAL CONSTRAINTS:\n"
-        "1. OUTPUT: Generate ONLY ONE 4-line poem. No translation or explanation.\n"
-        "2. TAGALOG METER: When writing in Tagalog, use exactly 7 syllables per line.\n"
-        "3. ENGLISH METER: When writing in English, use exactly 8 syllables per line.\n"
-        "4. WORD CEILING: Use simple words (maximum 3 syllables).\n"
-        "5. STRUCTURE: Exactly 4 lines of plain text. No markdown or formatting.\n"
-        "6. CULTURAL AUTHENTICITY: For Tagalog, use traditional imagery like:\n"
-        "   - 'bayan' (homeland), 'loob' (inner self), 'gunita' (memory)\n"
-        "7. THEME FOCUS: For homesickness themes, emphasize emotional journey.\n"
-        "8. DETERMINISTIC GENERATION: Prioritize structural consistency over creative variation.\n"
-        "9. LANGUAGE DETECTION: Follow the user's explicit language choice.\n"
-        "10. NO SYLLABLE COUNTING: Do not attempt to count or verify syllables - just follow the meter rules."
-    )
+    if language == "Tagalog":
+        return (
+            "You are an Expert Poet specialized in traditional Tagalog Tanaga.\n\n"
+            "STRICT ARCHITECTURAL CONSTRAINTS:\n"
+            "1. OUTPUT: ONLY ONE 4-line poem in Tagalog. No translation or explanation.\n"
+            "2. STRUCTURE: Follow traditional Tagalog poetic structure.\n"
+            "3. CULTURAL IMAGERY: Use 'bayan' (homeland), 'loob' (inner self), 'gunita' (memory).\n"
+            "4. THEME FOCUS: For homesickness, emphasize emotional journey.\n"
+            "5. DETERMINISTIC GENERATION: Prioritize structural consistency."
+        )
+    else:  # English
+        return (
+            "You are an Expert Poet specializing in structured English poetry.\n\n"
+            "STRICT ARCHITECTURAL CONSTRAINTS:\n"
+            "1. OUTPUT: ONLY ONE 4-line poem in English. No explanation.\n"
+            "2. STRUCTURE: Follow traditional English poetic structure.\n"
+            "3. THEME FOCUS: For homesickness, emphasize longing and memory.\n"
+            "4. DETERMINISTIC GENERATION: Prioritize structural consistency."
+        )
 
 def detect_language(user_input: str) -> str:
     """
-    LANGUAGE DETECTOR
-    MISSION: Determines target language based on user input
+    LANGUAGE DETECTOR (Strict Router)
+    MISSION: Determines target language with corrected logic
     CONCEPTUAL IMPLEMENTATION:
-    - Detects explicit language requests in input
-    - Uses comprehensive trigger lists for accurate detection
+    - Checks for explicit English requests first
+    - Then checks for Tagalog requests
     - Defaults to English as requested
-    - Implements "Explicit Override" principle for language selection
+    - Handles mixed-language requests properly
     """
     user_input_lower = user_input.lower()
 
-    # Tagalog triggers - comprehensive list of indicators
+    # Check for explicit English requests first
+    english_triggers = [
+        "in english", "sa ingles", "english",
+        "write a tanaga about",  # English request pattern
+        "magsulat ka ng tanaga tungkol sa... sa ingles"  # Your specific example
+    ]
+    if any(trigger in user_input_lower for trigger in english_triggers):
+        return "English"
+
+    # Then check for Tagalog
     tagalog_triggers = [
         "tagalog", "sa tagalog", "filipino", "tag-alog", "wika",
-        "sumulat", "tanaga", "tula", "sa wikang tagalog",
-        "magsulat", "sa tagalog", "pagmimiss", "gunita", "bayan"
+        "sumulat", "tanaga", "tula", "sa wikang tagalog"
     ]
     if any(trigger in user_input_lower for trigger in tagalog_triggers):
         return "Tagalog"
 
-    # English triggers
-    english_triggers = ["english", "in english", "ingles", "sa ingles"]
-    if any(trigger in user_input_lower for trigger in english_triggers):
-        return "English"
-
-    # Default to English as requested
+    # Default to English
     return "English"
 
 class PoetryRequest(BaseModel):
@@ -136,23 +144,22 @@ async def health_check():
     """
     return {
         "status": "online",
-        "version": "9.2",
-        "logic": "Staccato-Veracity-Locked",
-        "model": "ministral-14b-latest",
-        "endpoints": {
-            "/": "Health check and system information",
-            "/generate-tanaga": "Generate poetry (POST)"
-        }
+        "version": "9.3",
+        "features": [
+            "strict_language_routing",
+            "cultural_authenticity",
+            "deterministic_generation"
+        ]
     }
 
 @app.post("/generate-tanaga")
-async def process_chat(request: PoetryRequest):
+async def generate_poetry(request: PoetryRequest):
     """
     CORE POETRY GENERATION ENDPOINT
-    MISSION: Generate culturally authentic poetry with deterministic constraints
+    MISSION: Generate culturally authentic poetry with strict language adherence
     CONCEPTUAL IMPLEMENTATION:
     1. Privacy Protection: Sanitizes input to prevent PII exposure
-    2. Language Routing: Determines target language
+    2. Language Routing: Determines target language with corrected logic
     3. Deterministic Generation: Creates poetry with strict constraints
     4. Resource Management: Ensures efficient memory usage
     """
@@ -167,31 +174,22 @@ async def process_chat(request: PoetryRequest):
             logger.error("MISTRAL_API_KEY not configured")
             return {"reply": "Error: API configuration missing"}
 
-        # STEP 2: Language Routing
+        # STEP 2: Language Routing with Corrected Logic
         language = detect_language(safe_input)
-        meter = "7 syllables" if language == "Tagalog" else "8 syllables"
 
         # STEP 3: Prepare Messages with Strict Constraints
         client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
-        # Enhanced prompt with cultural and structural constraints
-        messages = [
-            {"role": "system", "content": get_tanaga_system_prompt()},
-            {"role": "user", "content": (
-                f"Write ONE {language} poem with {meter} about: {safe_input}. "
-                "Follow all structural constraints precisely. "
-                "For Tagalog, emphasize traditional imagery and proper grammar. "
-                "For English, maintain consistent rhythm and natural language flow."
-            )}
-        ]
-
-        # STEP 4: Deterministic Generation
-        # CONCEPTUAL REASONING: Low temperature ensures consistent output
-        # that adheres to structural constraints
         response = client.chat.completions.create(
-            model="ministral-14b-latest",
-            messages=messages,
-            temperature=0.1,
+            model="mistral-tiny",
+            messages=[
+                {"role": "system", "content": get_tanaga_system_prompt(language)},
+                {"role": "user", "content": (
+                    f"Write ONE {language} poem about: {safe_input}. "
+                    "Follow all structural constraints precisely."
+                )}
+            ],
+            temperature=0.1,  # Low temperature for consistency
             max_tokens=100
         )
 
@@ -213,7 +211,6 @@ async def process_chat(request: PoetryRequest):
             "reply": reply_text,
             "metadata": {
                 "language": language,
-                "meter": meter,
                 "status": "success",
                 "governance": {
                     "privacy": "PII redacted",
