@@ -1,8 +1,8 @@
 """
 ================================================================================
 SYSTEM ARCHITECT: Christopher Fornesa
-PROJECT: Tanaga & Poetry Agent (Phonetic Rigor Edition - Final)
-MISSION: Achieve consistent poetic forms through deterministic generation
+PROJECT: Tanaga & Poetry Agent (Final Production Edition)
+MISSION: Generate culturally authentic poetry with deterministic constraints
 GOVERNANCE: Local PII Redaction, Deterministic Inference, Language-Routing
 ================================================================================
 """
@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 # CONCEPTUAL REASONING: FastAPI provides asynchronous processing for
 # high-concurrency poetic generation while maintaining clean API boundaries
 app = FastAPI(
-    title="Tanaga & Poetry Agent - Veracity Edition",
+    title="Tanaga & Poetry Agent - Production Edition",
     description="Generates traditional poetic forms with deterministic constraints",
-    version="9.1"
+    version="9.2"
 )
 
 # 2. CORS PROTOCOL (The Digital Handshake)
@@ -75,14 +75,16 @@ def get_tanaga_system_prompt() -> str:
         "You are an Expert Poet specialized in traditional poetic forms.\n\n"
         "STRICT ARCHITECTURAL CONSTRAINTS:\n"
         "1. OUTPUT: Generate ONLY ONE 4-line poem. No translation or explanation.\n"
-        "2. TAGALOG METER: Exactly 7 syllables per line when writing in Tagalog.\n"
-        "3. ENGLISH METER: Exactly 8 syllables per line when writing in English.\n"
+        "2. TAGALOG METER: When writing in Tagalog, use exactly 7 syllables per line.\n"
+        "3. ENGLISH METER: When writing in English, use exactly 8 syllables per line.\n"
         "4. WORD CEILING: Use simple words (maximum 3 syllables).\n"
         "5. STRUCTURE: Exactly 4 lines of plain text. No markdown or formatting.\n"
         "6. CULTURAL AUTHENTICITY: For Tagalog, use traditional imagery like:\n"
         "   - 'bayan' (homeland), 'loob' (inner self), 'gunita' (memory)\n"
         "7. THEME FOCUS: For homesickness themes, emphasize emotional journey.\n"
-        "8. DETERMINISTIC GENERATION: Prioritize structural consistency over creative variation."
+        "8. DETERMINISTIC GENERATION: Prioritize structural consistency over creative variation.\n"
+        "9. LANGUAGE DETECTION: Follow the user's explicit language choice.\n"
+        "10. NO SYLLABLE COUNTING: Do not attempt to count or verify syllables - just follow the meter rules."
     )
 
 def detect_language(user_input: str) -> str:
@@ -100,10 +102,16 @@ def detect_language(user_input: str) -> str:
     # Tagalog triggers - comprehensive list of indicators
     tagalog_triggers = [
         "tagalog", "sa tagalog", "filipino", "tag-alog", "wika",
-        "sumulat", "tanaga", "tula", "sa wikang tagalog"
+        "sumulat", "tanaga", "tula", "sa wikang tagalog",
+        "magsulat", "sa tagalog", "pagmimiss", "gunita", "bayan"
     ]
     if any(trigger in user_input_lower for trigger in tagalog_triggers):
         return "Tagalog"
+
+    # English triggers
+    english_triggers = ["english", "in english", "ingles", "sa ingles"]
+    if any(trigger in user_input_lower for trigger in english_triggers):
+        return "English"
 
     # Default to English as requested
     return "English"
@@ -128,7 +136,7 @@ async def health_check():
     """
     return {
         "status": "online",
-        "version": "9.1",
+        "version": "9.2",
         "logic": "Staccato-Veracity-Locked",
         "model": "ministral-14b-latest",
         "endpoints": {
@@ -172,7 +180,8 @@ async def process_chat(request: PoetryRequest):
             {"role": "user", "content": (
                 f"Write ONE {language} poem with {meter} about: {safe_input}. "
                 "Follow all structural constraints precisely. "
-                "For Tagalog, emphasize traditional imagery and proper grammar."
+                "For Tagalog, emphasize traditional imagery and proper grammar. "
+                "For English, maintain consistent rhythm and natural language flow."
             )}
         ]
 
