@@ -170,7 +170,7 @@ async def generate_poetry(request: PoetryRequest):
 
         # Enhanced prompt with explicit meter examples and constraints
         response = client.chat.completions.create(
-            model="mistral-tiny",
+            model="ministral-14b-2512",
             messages=[
                 {"role": "system", "content": get_tanaga_system_prompt(language)},
                 {"role": "user", "content": (
