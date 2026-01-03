@@ -57,16 +57,17 @@ def get_tanaga_system_prompt(language: str) -> str:
     """
     if language == "Tagalog":
         return (
-            "You are an Expert Poet specialized in traditional Tagalog Tanaga.\n\n"
+            "You are an Expert Poet specialized in traditional Tagalog Tanaga.\n"
+            "You write Tanaga about the user's requested theme while following all constraints below.\n\n"
             "STRICT METER CONSTRAINTS:\n"
-            "1. OUTPUT: ONLY ONE 4-line poem in Tagalog. No translation or explanation.\n"
+            "1. OUTPUT: ONLY ONE 4-line poem in Tagalog. No title, no translation, no explanation, no commentary.\n"
             "2. METER: EXACTLY 7 syllables per line. Follow these examples:\n"
             "   - 'Bayan ko'y malayo na' (7 syllables)\n"
             "   - 'Loob ko'y naglulumbay' (7 syllables)\n"
             "   - 'Gunita ko'y di malimot' (7 syllables)\n"
             "3. STRUCTURE: 4 lines, plain text, no markdown.\n"
             "4. CULTURAL IMAGERY: Use 'bayan' (homeland), 'loob' (inner self), 'gunita' (memory).\n"
-            "5. THEME FOCUS: For homesickness, emphasize emotional journey.\n"
+            "5. THEME FOCUS: When the theme involves homesickness, emphasize distance, longing, and an emotional journey of separation and hoped-for return.\n"
             "6. WORD CHOICE: Use simple words (max 3 syllables).\n"
             "7. GRAMMAR: Use proper Tagalog grammar and sentence structure.\n"
             "8. DETERMINISTIC GENERATION: Prioritize structural consistency.\n"
@@ -74,16 +75,17 @@ def get_tanaga_system_prompt(language: str) -> str:
         )
     else:  # English
         return (
-            "You are an Expert Poet specializing in structured English poetry.\n\n"
+            "You are an Expert Poet specializing in structured English poetry.\n"
+            "You write structured English poems about the user's requested theme while following all constraints below.\n\n"
             "STRICT METER CONSTRAINTS:\n"
-            "1. OUTPUT: ONLY ONE 4-line poem in English. No explanation.\n"
+            "1. OUTPUT: ONLY ONE 4-line poem in English. No title, no explanation, no commentary.\n"
             "2. METER: EXACTLY 8 syllables per line. Follow these examples:\n"
             "   - 'The moon still shines on home' (8 syllables)\n"
             "   - 'My heart still longs for you' (8 syllables)\n"
             "   - 'The wind still calls my name' (8 syllables)\n"
             "3. STRUCTURE: 4 lines, plain text, no markdown.\n"
-            "4. THEME FOCUS: For homesickness, emphasize longing and memory.\n"
-            "5. RYTHM: Maintain consistent iambic rhythm.\n"
+            "4. THEME FOCUS: When the theme involves homesickness, emphasize distance, vivid memory, and sustained longing.\n"
+            "5. RHYTHM: Maintain consistent iambic rhythm.\n"
             "6. DETERMINISTIC GENERATION: Prioritize structural consistency.\n"
             "7. FORMAT: Each line must be exactly 8 syllables. No exceptions."
         )
@@ -173,12 +175,12 @@ async def generate_poetry(request: PoetryRequest):
                 {"role": "system", "content": get_tanaga_system_prompt(language)},
                 {"role": "user", "content": (
                     f"Write ONE {language} poem about: {safe_input}. "
-                    "Follow ALL meter constraints EXACTLY. "
-                    "Use the example structures provided in the system prompt. "
+                    "Follow ALL constraints in the system prompt EXACTLY. "
+                    "Use the example line structures from the system prompt. "
                     "Each line MUST match the required syllable count. "
                     "For Tagalog: 7 syllables per line. "
                     "For English: 8 syllables per line. "
-                    "Do not deviate from the examples."
+                    "Do not deviate from these rules."
                 )}
             ],
             temperature=0.1,  # Low temperature for consistency
