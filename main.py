@@ -1,10 +1,8 @@
 """
-================================================================================
-SYSTEM ARCHITECT: Christopher Fornesa
-PROJECT: Tanaga & Poetry Agent (Final Meter-Corrected Edition)
-MISSION: Generate culturally authentic poetry with strict meter adherence
-GOVERNANCE: Local PII Redaction, Deterministic Inference, Strict Meter Enforcement
-================================================================================
+Tanaga & Poetry Agent (Final Meter-Corrected Edition).
+
+Exposes a FastAPI service that generates Tagalog Tanaga or English poems
+with strict syllable-based meter, cultural constraints, and basic PII redaction.
 """
 
 import os
@@ -27,7 +25,7 @@ app = FastAPI(
     version="9.6"
 )
 
-# CORS Middleware
+# CORS Middleware: allow cross-origin access for UI clients.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,8 +33,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 def redact_pii(text: str) -> str:
-    """Redacts personally identifiable information from text inputs."""
+    """
+    Redact email addresses and phone numbers from the input text.
+
+    This provides a simple, best-effort safeguard so that potentially
+    identifying information is not sent to the external LLM service.
+    """
     patterns = {
         "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
         "PHONE": r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}'
@@ -45,15 +49,98 @@ def redact_pii(text: str) -> str:
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
     return text
 
-def get_tanaga_system_prompt(language: str) -> str:
+
+def heuristic_syllable_count(word: str) -> int:
     """
-    Generates language-specific system prompts with strict meter constraints.
+    Approximate the number of syllables in a single word.
+
+    Uses a simple vowel-group heuristic with a small adjustment for English
+    silent “e”. Intended for quick validation of meter, not linguistic accuracy.
+    """
+    w = re.sub(r"[^a-zA-ZáéíóúñüÁÉÍÓÚÑÜ]+", "", word)
+    if not w:
+        return 0
+
+    vowels = "aeiouyAEIOUYáéíóúÁÉÍÓÚ"
+    prev_is_vowel = False
+    count = 0
+
+    for ch in w:
+        is_vowel = ch in vowels
+        if is_vowel and not prev_is_vowel:
+            count += 1
+        prev_is_vowel = is_vowel
+
+    # Simple English-style adjustment for silent "e" endings.
+    if w.lower().endswith("e") and not w.lower().endswith("le") and count > 1:
+        count -= 1
+
+    return max(count, 1)
+
+
+def count_line_syllables(line: str) -> int:
+    """
+    Return the total syllable count for a single line of text.
+
+    Strips most punctuation, splits into words, and sums the heuristic
+    syllable count for each word.
+    """
+    cleaned = re.sub(r"[^\w\s'áéíóúñüÁÉÍÓÚÑÜ-]", "", line)
+    words = cleaned.split()
+    return sum(heuristic_syllable_count(w) for w in words)
+
+
+def validate_poem_meter(poem_text: str, language: str) -> Dict:
+    """
+    Validate each line of a poem against the required meter.
+
+    For Tagalog, expects 7 syllables per line.
+    For English, expects 8 syllables per line.
 
     Args:
-        language (str): Target language for generation ("English" or "Tagalog")
+        poem_text: Full poem text returned by the model.
+        language: Detected language ("English" or "Tagalog").
 
     Returns:
-        str: Formatted system prompt with strict meter constraints
+        A dictionary containing:
+            - lines: list of per-line meter reports.
+            - all_match: True if all lines match the target count.
+            - target: the target syllable count for this language.
+    """
+    target = 7 if language == "Tagalog" else 8
+    lines = [ln for ln in poem_text.splitlines() if ln.strip()]
+
+    results = []
+    all_match = True
+    for idx, line in enumerate(lines):
+        syllables = count_line_syllables(line)
+        ok = (syllables == target)
+        if not ok:
+            all_match = False
+        results.append({
+            "line_index": idx,
+            "text": line,
+            "syllables": syllables,
+            "target": target,
+            "valid": ok
+        })
+
+    return {
+        "lines": results,
+        "all_match": all_match,
+        "target": target
+    }
+
+
+def get_tanaga_system_prompt(language: str) -> str:
+    """
+    Build the system prompt defining role, structure, and meter constraints.
+
+    Args:
+        language: Target language for generation ("English" or "Tagalog").
+
+    Returns:
+        A system prompt string with strict, language-specific instructions.
     """
     if language == "Tagalog":
         return (
@@ -90,19 +177,22 @@ def get_tanaga_system_prompt(language: str) -> str:
             "7. FORMAT: Each line must be exactly 8 syllables. No exceptions."
         )
 
+
 def detect_language(user_input: str) -> str:
     """
-    Detects target language with enhanced logic for mixed-language requests.
+    Infer whether the user is requesting Tagalog or English output.
+
+    Uses simple trigger phrases and defaults to English when unsure.
 
     Args:
-        user_input (str): User's raw input text
+        user_input: Raw input text from the user.
 
     Returns:
-        str: Detected language ("English" or "Tagalog")
+        "English" or "Tagalog" as the target generation language.
     """
     user_input_lower = user_input.lower()
 
-    # Check for explicit English requests first
+    # Check for explicit English requests first.
     english_triggers = [
         "in english", "sa ingles", "english",
         "write a tanaga about",
@@ -112,7 +202,7 @@ def detect_language(user_input: str) -> str:
     if any(trigger in user_input_lower for trigger in english_triggers):
         return "English"
 
-    # Check for Tagalog requests
+    # Check for Tagalog requests.
     tagalog_triggers = [
         "tagalog", "sa tagalog", "filipino", "tag-alog", "wika",
         "sumulat", "tanaga", "tula", "sa wikang tagalog"
@@ -120,17 +210,24 @@ def detect_language(user_input: str) -> str:
     if any(trigger in user_input_lower for trigger in tagalog_triggers):
         return "Tagalog"
 
-    # Default to English
+    # Default to English when ambiguous.
     return "English"
 
+
 class PoetryRequest(BaseModel):
-    """Request model for poetry generation"""
+    """Request model for Tanaga/poetry generation."""
     user_input: str
     history: List[Dict] = []
 
+
 @app.get("/")
 async def health_check():
-    """Health check endpoint"""
+    """
+    Report basic service health, version, and feature flags.
+
+    This endpoint can be used by monitoring or orchestration systems to
+    verify that the service is online and correctly configured.
+    """
     return {
         "status": "online",
         "version": "9.6",
@@ -141,66 +238,82 @@ async def health_check():
         ]
     }
 
+
 @app.post("/generate-tanaga")
 async def generate_poetry(request: PoetryRequest):
     """
-    Main poetry generation endpoint with strict meter enforcement.
+    Generate a single poem with strict meter and return meter diagnostics.
 
-    Args:
-        request (PoetryRequest): Contains user input and parameters
-
-    Returns:
-        dict: Generated poetry with metadata or error message
+    The endpoint:
+      * Redacts basic PII from the user input.
+      * Detects the target language (Tagalog or English).
+      * Calls the Ministral 14B model with a strict system prompt.
+      * Validates the resulting poem's syllable counts and retries once
+        if the meter does not fully match.
     """
     try:
         from openai import OpenAI
 
-        # Input processing
+        # Input processing and PII minimization.
         safe_input = redact_pii(request.user_input)
         api_key = os.environ.get('MISTRAL_API_KEY')
 
         if not api_key:
             return {"reply": "Error: API configuration missing"}
 
-        # Language detection
+        # Language detection determines both prompt and meter target.
         language = detect_language(safe_input)
 
-        # Prepare messages with strict meter constraints
+        # Mistral chat client pointing at the Ministral endpoint.
         client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
 
-        # Enhanced prompt with explicit meter examples and constraints
-        response = client.chat.completions.create(
-            model="ministral-14b-2512",
-            messages=[
-                {"role": "system", "content": get_tanaga_system_prompt(language)},
-                {"role": "user", "content": (
-                    f"Write ONE {language} poem about: {safe_input}. "
-                    "Follow ALL constraints in the system prompt EXACTLY. "
-                    "Use the example line structures from the system prompt. "
-                    "Each line MUST match the required syllable count. "
-                    "For Tagalog: 7 syllables per line. "
-                    "For English: 8 syllables per line. "
-                    "Do not deviate from these rules."
-                )}
-            ],
-            temperature=0.1,  # Low temperature for consistency
-            max_tokens=100
-        )
+        # Attempt generation up to max_attempts times, preferring perfect meter.
+        max_attempts = 2
+        reply_text = ""
+        meter_report = None
+        response = None  # kept for potential debugging or logging
 
-        # Response validation
-        if not hasattr(response, 'choices') or len(response.choices) == 0:
+        for attempt in range(max_attempts):
+            response = client.chat.completions.create(
+                model="ministral-14b-2512",
+                messages=[
+                    {"role": "system", "content": get_tanaga_system_prompt(language)},
+                    {"role": "user", "content": (
+                        f"Write ONE {language} poem about: {safe_input}. "
+                        "Follow ALL constraints in the system prompt EXACTLY. "
+                        "Use the example line structures from the system prompt. "
+                        "Each line MUST match the required syllable count. "
+                        "For Tagalog: 7 syllables per line. "
+                        "For English: 8 syllables per line. "
+                        "Do not deviate from these rules."
+                    )}
+                ],
+                temperature=0.1,
+                max_tokens=100
+            )
+
+            if not hasattr(response, 'choices') or len(response.choices) == 0:
+                continue
+
+            reply_text = response.choices[0].message.content.strip()
+            meter_report = validate_poem_meter(reply_text, language)
+
+            if meter_report["all_match"]:
+                break
+
+        # Response validation after attempts.
+        if not reply_text:
             return {"reply": "Error: Empty response from poetry engine"}
 
-        reply_text = response.choices[0].message.content.strip()
-
-        # Resource cleanup
+        # Eager cleanup of temporary objects.
         gc.collect()
 
         return {
             "reply": reply_text,
             "metadata": {
                 "language": language,
-                "status": "success"
+                "status": "success",
+                "meter": meter_report
             }
         }
 
@@ -208,6 +321,8 @@ async def generate_poetry(request: PoetryRequest):
         gc.collect()
         return {"reply": f"System Error: {str(e)}"}
 
+
 if __name__ == "__main__":
+    # Allow running the service directly (e.g., `python main.py` or on Replit).
     port = int(os.environ.get("PORT", 5000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, log_level="info")
