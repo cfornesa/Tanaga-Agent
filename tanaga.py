@@ -23,8 +23,8 @@ def redact_pii(text: str) -> str:
     identifying information is not sent to the external LLM service.
     """
     patterns = {
-        "EMAIL": r'[\w\.-]+@[\w\.-]+\.\w+',
-        "PHONE": r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}'
+        "EMAIL": r"[\w\.-]+@[\w\.-]+\.\w+",
+        "PHONE": r"\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}",
     }
     for label, pattern in patterns.items():
         text = re.sub(pattern, f"[{label}_REDACTED]", text, flags=re.IGNORECASE)
@@ -95,68 +95,20 @@ def validate_poem_meter(poem_text: str, language: str) -> Dict:
     all_match = True
     for idx, line in enumerate(lines):
         syllables = count_line_syllables(line)
-        ok = (syllables == target)
+        ok = syllables == target
         if not ok:
             all_match = False
-        results.append({
-            "line_index": idx,
-            "text": line,
-            "syllables": syllables,
-            "target": target,
-            "valid": ok
-        })
-
-    return {
-        "lines": results,
-        "all_match": all_match,
-        "target": target
-    }
-
-
-def get_tanaga_system_prompt(language: str) -> str:
-    """
-    Build the system prompt defining role, structure, and meter constraints.
-
-    Args:
-        language: Target language for generation ("English" or "Tagalog").
-
-    Returns:
-        A system prompt string with strict, language-specific instructions.
-    """
-    if language == "Tagalog":
-        return (
-            "You are an Expert Poet specialized in traditional Tagalog Tanaga.\n"
-            "You write Tanaga about the user's requested theme while following all constraints below.\n\n"
-            "STRICT METER CONSTRAINTS:\n"
-            "1. OUTPUT: ONLY ONE 4-line poem in Tagalog. No title, no translation, no explanation, no commentary.\n"
-            "2. METER: EXACTLY 7 syllables per line. Follow these examples:\n"
-            "   - 'Bayan ko'y malayo na' (7 syllables)\n"
-            "   - 'Loob ko'y naglulumbay' (7 syllables)\n"
-            "   - 'Gunita ko'y di malimot' (7 syllables)\n"
-            "3. STRUCTURE: 4 lines, plain text, no markdown.\n"
-            "4. CULTURAL IMAGERY: Use 'bayan' (homeland), 'loob' (inner self), 'gunita' (memory).\n"
-            "5. THEME FOCUS: When the theme involves homesickness, emphasize distance, longing, and an emotional journey of separation and hoped-for return.\n"
-            "6. WORD CHOICE: Use simple words (max 3 syllables).\n"
-            "7. GRAMMAR: Use proper Tagalog grammar and sentence structure.\n"
-            "8. DETERMINISTIC GENERATION: Prioritize structural consistency.\n"
-            "9. FORMAT: Each line must be exactly 7 syllables. No exceptions."
+        results.append(
+            {
+                "line_index": idx,
+                "text": line,
+                "syllables": syllables,
+                "target": target,
+                "valid": ok,
+            }
         )
-    else:  # English
-        return (
-            "You are an Expert Poet specializing in structured English poetry.\n"
-            "You write structured English poems about the user's requested theme while following all constraints below.\n\n"
-            "STRICT METER CONSTRAINTS:\n"
-            "1. OUTPUT: ONLY ONE 4-line poem in English. No title, no explanation, no commentary.\n"
-            "2. METER: EXACTLY 8 syllables per line. Follow these examples:\n"
-            "   - 'The moon still shines on home' (8 syllables)\n"
-            "   - 'My heart still longs for you' (8 syllables)\n"
-            "   - 'The wind still calls my name' (8 syllables)\n"
-            "3. STRUCTURE: 4 lines, plain text, no markdown.\n"
-            "4. THEME FOCUS: When the theme involves homesickness, emphasize distance, vivid memory, and sustained longing.\n"
-            "5. RHYTHM: Maintain consistent iambic rhythm.\n"
-            "6. DETERMINISTIC GENERATION: Prioritize structural consistency.\n"
-            "7. FORMAT: Each line must be exactly 8 syllables. No exceptions."
-        )
+
+    return {"lines": results, "all_match": all_match, "target": target}
 
 
 def detect_language(user_input: str) -> str:
@@ -175,18 +127,27 @@ def detect_language(user_input: str) -> str:
 
     # Check for explicit English requests first.
     english_triggers = [
-        "in english", "sa ingles", "english",
+        "in english",
+        "sa ingles",
+        "english",
         "write a tanaga about",
         "magsulat ka ng tanaga tungkol sa... sa ingles",
-        "english version"
+        "english version",
     ]
     if any(trigger in user_input_lower for trigger in english_triggers):
         return "English"
 
     # Check for Tagalog requests.
     tagalog_triggers = [
-        "tagalog", "sa tagalog", "filipino", "tag-alog", "wika",
-        "sumulat", "tanaga", "tula", "sa wikang tagalog"
+        "tagalog",
+        "sa tagalog",
+        "filipino",
+        "tag-alog",
+        "wika",
+        "sumulat",
+        "tanaga",
+        "tula",
+        "sa wikang tagalog",
     ]
     if any(trigger in user_input_lower for trigger in tagalog_triggers):
         return "Tagalog"
@@ -199,73 +160,72 @@ def get_tanaga_example(language: str) -> str:
     if language == "Tagalog":
         # 7 syllables per line, manually verified
         return (
-            "Bayan ko'y malayo na\n"   # Ba-yan-ko-y-ma-la-yo = 7
+            "Bayan ko'y malayo na\n"  # Ba-yan-ko-y-ma-la-yo = 7
             "Loob ko'y naglulumbay\n"  # Lo-ob-ko-y-nag-lu-lum-bay = 7 (elided)
-            "Gunita ko'y di malimot\n" # Gu-ni-ta-ko-y-di-ma-li-mot = 7 (elided)
-            "Puso ko'y laging nandoon" # Pu-so-ko-y-la-ging-nan-doon = 7 (elided)
+            "Gunita ko'y di malimot\n"  # Gu-ni-ta-ko-y-di-ma-li-mot = 7 (elided)
+            "Puso ko'y laging nandoon"  # Pu-so-ko-y-la-ging-nan-doon = 7 (elided)
         )
     else:
         # 8 syllables per line, iambic, manually verified
         return (
             "The leaves are turning gold and red\n"  # 8
-            "The winter sun grows cold and low\n"    # 8
-            "The birds have long since fled their nest\n" # 8
-            "The earth prepares for ice and snow"    # 8
+            "The winter sun grows cold and low\n"  # 8
+            "The birds have long since fled their nest\n"  # 8
+            "The earth prepares for ice and snow"  # 8
         )
 
 
 def generate_poem(user_input: str, language: str = "Tagalog") -> dict:
-    """
-    Generate a single poem with strict meter and return meter diagnostics.
-
-    Redacts basic PII from the user input, detects the target language,
-    calls the Ministral 14B model with a strict system prompt, and validates
-    the resulting poem's syllable counts, retrying once if meter does not match.
-
-    Args:
-        user_input: Raw theme or request text from the user.
-
-    Returns:
-        A dictionary with the poem text and metadata (language, meter report).
-    """
-    from openai import OpenAI
+    from mistralai import Mistral
 
     safe_input = redact_pii(user_input)
-    api_key = os.environ.get('MISTRAL_API_KEY')
+    api_key = os.environ.get("MISTRAL_API_KEY")
+    agent_id = os.environ.get("AGENT_ID")
 
-    if not api_key:
+    if not api_key or not agent_id:
         return {"reply": "Error: API configuration missing"}
 
-    client = OpenAI(api_key=api_key, base_url="https://api.mistral.ai/v1")
+    client = Mistral(api_key=api_key)
+    syllable_count = "7" if language == "Tagalog" else "8"
 
     max_attempts = 2
     reply_text = ""
     meter_report = None
-    response = None  # kept for potential debugging or logging
 
+    # Retry loop for meter validation
     for attempt in range(max_attempts):
-        response = client.chat.completions.create(
-            model="ministral-14b-2512",
-            messages=[
-                {"role": "system", "content": get_tanaga_system_prompt(language)},
-                # Few-shot: demonstrates meter compliance only, topic is irrelevant
-                {"role": "user", "content": f"Write ONE {language} poem about: nature."},
-                {"role": "assistant", "content": get_tanaga_example(language)},
-                # Actual user request — completely free-form topic
-                {"role": "user", "content": (
-                    f"Write ONE {language} poem about: {safe_input}. "
-                    "Each line MUST be exactly " + ("7" if language == "Tagalog" else "8") + " syllables. "
-                    "Follow ALL constraints in the system prompt EXACTLY."
-                )}
+        # Call Mistral API with structured prompt template
+        response = client.beta.conversations.start(
+            agent_id=agent_id,
+            agent_version=1,
+            inputs=[
+                {
+                    "role": "user",
+                    "content": (
+                        f"Language: {language}. "
+                        f"Write ONE {language} poem about: {safe_input}. "
+                        f"Each line MUST be exactly {syllable_count} syllables. "
+                        "Output ONLY the 4 lines of the poem. No title, no explanation."
+                    ),
+                }
             ],
-            temperature=0.1,
-            max_tokens=100
         )
 
-        if not hasattr(response, 'choices') or len(response.choices) == 0:
+        # Parse reply from agent response outputs
+        reply_text = ""
+        for output in response.outputs:
+            if hasattr(output, "role") and output.role == "assistant":
+                content = output.content
+                if isinstance(content, list):
+                    reply_text = content[0].text
+                else:
+                    reply_text = content
+                break
+
+        if not reply_text:
             continue
 
-        reply_text = response.choices[0].message.content.strip()
+        reply_text = reply_text.strip()
         meter_report = validate_poem_meter(reply_text, language)
 
         if meter_report["all_match"]:
@@ -278,9 +238,5 @@ def generate_poem(user_input: str, language: str = "Tagalog") -> dict:
 
     return {
         "reply": reply_text,
-        "metadata": {
-            "language": language,
-            "status": "success",
-            "meter": meter_report
-        }
+        "metadata": {"language": language, "status": "success", "meter": meter_report},
     }

@@ -1,11 +1,11 @@
 [project]
 name = "tanaga-agent"
 version = "0.1.0"
-description = "This is a Tanaga agent that uses the DeepSeek Reasoner model (using DeepSeek's API) to write a Tanaga based on the user's input. The tanaga is a traditional style of poetry native to the Tagalog people of the Philippines, traditionally written to express strong emotions."
+description = "This is a Tanaga agent that uses the Mistral Small 4 model (using Mistral's API) to write a Tanaga based on the user's input. The tanaga is a traditional style of poetry native to the Tagalog people of the Philippines, traditionally written to express strong emotions. Its English equivalent is the Syllabic Verse."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.125.0",
-    "openai>=2.14.0",
+    "mistralai>=1.0.0,<2.0.0",
     "pydantic>=2.12.5",
     "uvicorn>=0.38.0",
 ]
