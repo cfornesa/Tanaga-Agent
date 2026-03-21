@@ -133,7 +133,7 @@ function displayMessage(message) {
         ? '<span class="meter-badge ' + (message.meterValid ? 'meter-valid' : 'meter-invalid') + '">' + (message.meterValid ? '✓ meter' : '⚠ meter off') + '</span>'
         : '';
 
-    const senderLabel = message.type === 'user' ? 'You' : 'Poetry Agent';
+    const senderLabel = message.type === 'user' ? 'You' : 'Tanaga Poetry Agent';
 
     messageEl.innerHTML = [
         '<div class="message-wrapper">',
