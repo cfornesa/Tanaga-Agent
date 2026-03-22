@@ -204,8 +204,7 @@ def generate_poem(user_input: str, language: str = "Tagalog") -> dict:
                     "content": (
                         f"Language: {language}. "
                         f"Write ONE {language} poem about: {safe_input}. "
-                        f"Each line MUST be exactly {syllable_count} syllables. "
-                        "Output ONLY the 4 lines of the poem. No title, no explanation."
+                        f"Each line MUST be exactly {syllable_count} syllables."
                     ),
                 }
             ],
