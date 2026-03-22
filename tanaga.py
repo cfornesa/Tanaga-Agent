@@ -197,7 +197,7 @@ def generate_poem(user_input: str, language: str = "Tagalog") -> dict:
         # Call Mistral API with structured prompt template
         response = client.beta.conversations.start(
             agent_id=agent_id,
-            agent_version=1,
+            agent_version=2,
             inputs=[
                 {
                     "role": "user",
