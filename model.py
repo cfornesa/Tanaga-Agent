@@ -1,5 +1,5 @@
 """
-tanaga.py – Core logic for the Tanaga & Poetry Agent.
+model.py – Core logic for the Tanaga & Poetry Agent.
 
 Contains PII redaction, syllable utilities, meter validation,
 prompt construction, language detection, and the main poem
@@ -197,7 +197,7 @@ def generate_poem(user_input: str, language: str = "Tagalog") -> dict:
         # Call Mistral API with structured prompt template
         response = client.beta.conversations.start(
             agent_id=agent_id,
-            agent_version=2,
+            agent_version="latest",
             inputs=[
                 {
                     "role": "user",

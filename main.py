@@ -16,8 +16,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 
-# Import the core poem generation function from tanaga.py
-from tanaga import generate_poem
+# Import the core poem generation function from model.py
+from model import generate_poem
 
 # Operational Transparency Configuration
 logging.basicConfig(level=logging.INFO)
