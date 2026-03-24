@@ -3,36 +3,23 @@ let messages = [];
 let isLoading = false;
 
 // DOM Elements
-const welcomeScreen     = document.getElementById('welcomeScreen');
+const welcomeScreen = document.getElementById('welcomeScreen');
 const messagesContainer = document.getElementById('messagesContainer');
-const loadingIndicator  = document.getElementById('loadingIndicator');
-const messagesEnd       = document.getElementById('messagesEnd');
-const clearBtn          = document.getElementById('clearBtn');
-const chatForm          = document.getElementById('chatForm');
-const messageInput      = document.getElementById('messageInput');
-const sendButton        = document.getElementById('sendButton');
-const sendIcon          = document.getElementById('sendIcon');
-const loadingSpinner    = document.getElementById('loadingSpinner');
-const languageSelect    = document.getElementById('languageSelect');
+const loadingIndicator = document.getElementById('loadingIndicator');
+const messagesEnd = document.getElementById('messagesEnd');
+const clearBtn = document.getElementById('clearBtn');
+const chatForm = document.getElementById('chatForm');
+const messageInput = document.getElementById('messageInput');
+const sendButton = document.getElementById('sendButton');
+const sendIcon = document.getElementById('sendIcon');
+const loadingSpinner = document.getElementById('loadingSpinner');
+const languageSelect = document.getElementById('languageSelect');
 
 // Initialize
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     updateSendButton();
-    setupWelcomeChips();
 });
-
-// Clicking a welcome chip pre-fills the textarea
-function setupWelcomeChips() {
-    document.querySelectorAll('.welcome-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            messageInput.value = chip.textContent.trim();
-            autoResizeTextarea();
-            updateSendButton();
-            messageInput.focus();
-        });
-    });
-}
 
 function setupEventListeners() {
     chatForm.addEventListener('submit', handleSubmit);
@@ -98,9 +85,7 @@ async function sendMessage(content) {
         });
 
         const data = await response.json();
-        const isError = !data.reply
-            || data.reply.startsWith('Error:')
-            || data.reply.startsWith('System Error:');
+        const isError = !data.reply || data.reply.startsWith('Error:') || data.reply.startsWith('System Error:');
 
         const aiMessage = {
             id: (Date.now() + 1).toString(),
@@ -137,19 +122,18 @@ function displayMessage(message) {
     const time = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const avatarIcon = message.type === 'user'
-        ? '<span class="material-symbols-outlined" style="font-size:15px;">person</span>'
-        : '<span class="material-symbols-outlined" style="font-size:15px;">smart_toy</span>';
+        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
 
     const languageBadge = message.language
         ? '<span class="message-model">' + message.language + '</span>'
         : '';
 
     const meterBadge = (message.meterValid !== null && message.meterValid !== undefined)
-        ? '<span class="meter-badge ' + (message.meterValid ? 'meter-valid' : 'meter-invalid') + '">'
-          + (message.meterValid ? '✓ meter' : '⚠ meter off') + '</span>'
+        ? '<span class="meter-badge ' + (message.meterValid ? 'meter-valid' : 'meter-invalid') + '">' + (message.meterValid ? '✓ meter' : '⚠ meter off') + '</span>'
         : '';
 
-    const senderLabel = message.type === 'user' ? 'You' : 'Tanaga Agent';
+    const senderLabel = message.type === 'user' ? 'You' : 'Tanaga Poetry Agent';
 
     messageEl.innerHTML = [
         '<div class="message-wrapper">',
@@ -179,7 +163,7 @@ function setLoadingState(loading) {
     updateSendButton();
     messageInput.disabled = loading;
     if (loading) {
-        loadingIndicator.style.display = 'flex';
+        loadingIndicator.style.display = 'block';
         sendIcon.style.display = 'none';
         loadingSpinner.style.display = 'block';
     } else {
@@ -192,8 +176,8 @@ function setLoadingState(loading) {
 
 function hideWelcomeScreen() { welcomeScreen.style.display = 'none'; }
 function showWelcomeScreen() { welcomeScreen.style.display = 'flex'; }
-function showClearButton()   { clearBtn.style.display = 'flex'; }
-function hideClearButton()   { clearBtn.style.display = 'none'; }
+function showClearButton() { clearBtn.style.display = 'flex'; }
+function hideClearButton() { clearBtn.style.display = 'none'; }
 
 function clearChat() {
     messages = [];
