@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tanaga Poetry Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app-container">
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-brand">
+                    <span class="material-symbols-outlined header-icon">auto_awesome</span>
+                    <span class="header-title">Tanaga Poetry Agent</span>
+                </div>
+                <button id="clearBtn" class="clear-btn" style="display:none;">
+                    <span class="material-symbols-outlined" style="font-size:16px;">delete_sweep</span>
+                    Clear Chat
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Container -->
+        <div class="chat-container">
+
+            <!-- Messages Area -->
+            <div class="messages-area">
+                <div class="messages-content">
+
+                    <!-- Welcome Screen -->
+                    <div id="welcomeScreen" class="welcome-screen">
+                        <div class="welcome-icon">
+                            <span class="material-symbols-outlined" style="font-size:32px;">history_edu</span>
+                        </div>
+                        <h2 class="welcome-title">Mabuhay, Makata.</h2>
+                        <p class="welcome-subtitle">The Modern Oralist</p>
+                        <p class="welcome-text">Compose Traditional Tagalog Tanaga poetry through the rhythmic precision of AI. Four lines, seven syllables, infinite soul.</p>
+                        <p class="welcome-text">Powered by <a href="https://mistral.ai/news/mistral-medium-3" target="_blank">Mistral AI (Mistral Medium 3)</a>.</p>
+                        <div class="welcome-chips">
+                            <span class="welcome-chip">Araw sa Manila Bay</span>
+                            <span class="welcome-chip">Tagsibol at pag-asa</span>
+                            <span class="welcome-chip">Homesickness &amp; longing</span>
+                            <span class="welcome-chip">Seasons changing</span>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div id="messagesContainer" class="messages-container"></div>
+
+                    <!-- Loading Indicator -->
+                    <div id="loadingIndicator" class="loading-indicator" style="display:none;">
+                        <div class="loading-avatar">
+                            <span class="material-symbols-outlined" style="font-size:14px;">smart_toy</span>
+                        </div>
+                        <div class="loading-bubble">
+                            <div class="loading-dots">
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                            </div>
+                            <span class="loading-text">Auditing phonetics...</span>
+                        </div>
+                    </div>
+
+                    <div id="messagesEnd"></div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-content">
+                    <form id="chatForm" class="chat-form">
+                        <div class="language-section">
+                            <span class="language-label">Language:</span>
+                            <div class="select-wrapper">
+                                <select id="languageSelect" class="language-select">
+                                    <option value="Tagalog">Tagalog</option>
+                                    <option value="English">English</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-section">
+                            <div class="textarea-container">
+                                <textarea
+                                    id="messageInput"
+                                    class="message-textarea"
+                                    placeholder="Enter a theme for your poem... (Enter to send, Shift+Enter for new line)"
+                                    rows="1"
+                                ></textarea>
+                            </div>
+                            <button type="submit" id="sendButton" class="send-button" disabled>
+                                <span id="sendIcon" class="material-symbols-outlined" style="font-size:20px;">send</span>
+                                <span id="loadingSpinner" class="loading-spinner" style="display:none;">
+                                    <span class="spinner"></span>
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
