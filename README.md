@@ -58,3 +58,16 @@ Use these values in your Node.js app settings:
 - Node version: `20.x`
 
 Set the required environment variables in Hostinger before starting the app.
+
+## Troubleshooting Deploy Builds
+
+If Hostinger shows `esbuild: command not found`, it means the build toolchain was not installed in that deploy environment.
+
+Use this checklist:
+
+- Package manager: `npm`
+- Build command: `npm run build`
+- Entry file: `server.bundle.js`
+- Node version: `20.x`
+
+This repository keeps `esbuild` in `dependencies` so it is available even when production-only installs are used during deploy.
